@@ -1,0 +1,18 @@
+{
+  "name": "diamond-site",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Marketing/landing site for Diamond — MLB stats web app + CLI",
+  "scripts": {
+    "sync:shots": "node scripts/sync-screenshots.mjs",
+    "predev": "npm run sync:shots",
+    "prebuild": "npm run sync:shots",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^5.6.1"
+  }
+}

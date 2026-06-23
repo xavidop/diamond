@@ -1,0 +1,346 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const WEB_APP = 'https://diamondapp.xavidop.me';
+const REPO = 'https://github.com/xavidop/diamond';
+const TAP = 'https://github.com/xavidop/homebrew-tap';
+
+const features = [
+  { tag: 'Live', title: 'Scoreboard', body: "Today's games with auto-refresh, linescores, boxscores, and probable pitchers." },
+  { tag: 'Races', title: 'Standings', body: 'Division and wild-card standings by league, with run differential, for any season.' },
+  { tag: 'Profiles', title: 'Players & teams', body: 'Rosters, season and career stats, situational splits, game logs, and trend charts.' },
+  { tag: 'Stats', title: 'Leaders', body: 'Hitting and pitching leaders for any season and category, ranked at a glance.' },
+  { tag: 'AI', title: 'DiamondGPT', body: 'Ask in plain English — the assistant calls 18 live MLB tools to answer with real data.' },
+  { tag: 'Raw', title: 'API Explorer', body: 'Call every MLB Stats API endpoint from a dynamic UI with a raw JSON viewer.' },
+];
+---
+
+<Layout>
+  <!-- NAV -->
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/" aria-label="Diamond home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12h4l3 8 4-16 3 8h6" />
+          </svg>
+        </span>
+        <span class="brand-name">DIAMOND</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#web">Web app</a>
+        <a href="#diamondgpt">DiamondGPT</a>
+        <a href="#cli">CLI</a>
+        <a href="#alerts">Alerts</a>
+        <a href="#mcp">MCP</a>
+        <a href={REPO}>GitHub</a>
+      </nav>
+      <div class="nav-cta">
+        <a class="btn btn-primary" href={WEB_APP}>Open web app</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-diamond" aria-hidden="true"></div>
+    <div class="wrap">
+      <p class="eyebrow">MLB stats · web + terminal + AI</p>
+      <h1>The whole ballgame, in your <span class="hl">browser</span> and your <span class="hl">terminal</span>.</h1>
+      <p class="hero-sub">
+        Diamond turns the public MLB Stats API into a fast web app and a beautiful
+        terminal app — both backed by DiamondGPT, an assistant that pulls live data
+        to answer questions in plain English. No API key required for stats.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href={WEB_APP}>Open the web app →</a>
+        <a class="btn btn-ghost" href="#cli">Install the CLI</a>
+      </div>
+      <p class="hero-note">Free · open source · not affiliated with MLB</p>
+
+      <figure class="scoreboard">
+        <div class="scoreboard-bar">
+          <span class="dot live"></span><span class="dot"></span><span class="dot"></span>
+          <span class="scoreboard-url">diamondapp.xavidop.me</span>
+        </div>
+        <img src="/screenshots/web-home.png" width="1440" height="900"
+             alt="Diamond web app — today's MLB scoreboard dashboard" />
+      </figure>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">What's inside</p>
+        <h2>Every box score, standing, and stat — one tap away.</h2>
+        <p>The same data set, shaped for two places you actually work: a rich web app and a fast terminal UI.</p>
+      </div>
+      <div class="features-grid">
+        {features.map((f) => (
+          <article class="card">
+            <span class="card-tag">{f.tag}</span>
+            <h3>{f.title}</h3>
+            <p>{f.body}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule" />
+
+  <!-- WEB APP -->
+  <section class="section" id="web">
+    <div class="wrap">
+      <div class="split">
+        <div class="split-copy">
+          <p class="eyebrow">The web app</p>
+          <h2>A full front office in the browser.</h2>
+          <p>
+            Built with React, Tailwind, and Recharts for a fast, responsive experience —
+            from the live scoreboard to deep player profiles with year-by-year trend charts.
+          </p>
+          <ul class="feature-list">
+            <li>Scoreboard, standings, teams, and player profiles</li>
+            <li>Game detail with live linescore, boxscores, and play-by-play</li>
+            <li>Stat leaders, streaks, and side-by-side comparisons</li>
+            <li>API Explorer for every MLB Stats API endpoint</li>
+          </ul>
+          <a class="btn btn-primary" href={WEB_APP}>Open the web app →</a>
+        </div>
+        <div class="split-media">
+          <div class="shot">
+            <img src="/screenshots/web-standings.png" width="1440" height="900"
+                 alt="Diamond web app — division standings" />
+          </div>
+        </div>
+      </div>
+
+      <div class="gallery" style="margin-top:32px">
+        <figure>
+          <img src="/screenshots/web-leaders.png" width="1440" height="900" alt="Stat leaders" />
+          <figcaption><b>Stat leaders</b> — hitting & pitching by category</figcaption>
+        </figure>
+        <figure>
+          <img src="/screenshots/web-explorer.png" width="1440" height="900" alt="API Explorer" />
+          <figcaption><b>API Explorer</b> — every endpoint, live</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule" />
+
+  <!-- DIAMONDGPT -->
+  <section class="section" id="diamondgpt">
+    <div class="wrap">
+      <div class="split reverse">
+        <div class="split-copy">
+          <p class="eyebrow">DiamondGPT ✨</p>
+          <h2>Ask baseball anything.</h2>
+          <p>
+            DiamondGPT answers in plain English by calling 18 live MLB tools — schedules,
+            standings, leaders, player and team stats, splits, game logs, awards, the draft,
+            win probability, and more. Real numbers, not guesses.
+          </p>
+          <ul class="feature-list">
+            <li>18 live data tools wired to the MLB Stats API</li>
+            <li>In the web app <em>and</em> the terminal alike</li>
+            <li>Bring your own key, or use the server's</li>
+            <li>Switch providers mid-conversation</li>
+          </ul>
+          <div class="chips">
+            <span class="chip">Google Gemini</span>
+            <span class="chip">Anthropic Claude</span>
+            <span class="chip">OpenAI</span>
+          </div>
+        </div>
+        <div class="split-media">
+          <div class="shot">
+            <img src="/screenshots/web-diamondgpt.png" width="1440" height="900"
+                 alt="DiamondGPT answering a question about MLB home run leaders with live data" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule" />
+
+  <!-- CLI -->
+  <section class="section" id="cli">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">The terminal app</p>
+        <h2>Same stats, no browser. Just <code>diamond</code>.</h2>
+        <p>A Go CLI built with Bubble Tea. Run <code>diamond</code> for the interactive TUI, or jump
+          straight to a view with a subcommand. Includes DiamondGPT and an MCP server.</p>
+      </div>
+
+      <div class="install-grid">
+        <div class="install">
+          <div class="install-head"><span class="num">◆</span> Homebrew</div>
+          <pre><code><span class="p">brew</span> install xavidop/tap/diamond
+<span class="p">diamond</span></code></pre>
+        </div>
+        <div class="install">
+          <div class="install-head"><span class="num">◆</span> Docker</div>
+          <pre><code><span class="p">docker</span> run --rm -it ghcr.io/xavidop/diamond:latest
+<span class="c"># or a specific view:</span>
+<span class="p">docker</span> run --rm -it ghcr.io/xavidop/diamond scores</code></pre>
+        </div>
+        <div class="install">
+          <div class="install-head"><span class="num">◆</span> Go install</div>
+          <pre><code><span class="p">go</span> install github.com/xavidop/diamond/cli@latest</code></pre>
+        </div>
+        <div class="install">
+          <div class="install-head"><span class="num">◆</span> From source</div>
+          <pre><code><span class="p">cd</span> cli &amp;&amp; go build -o diamond .
+<span class="p">./diamond</span></code></pre>
+        </div>
+      </div>
+
+      <div class="gallery">
+        <figure>
+          <img src="/screenshots/cli-home.png" width="1500" height="900" alt="Diamond CLI interactive menu" />
+          <figcaption><b>Interactive menu</b> — run <code>diamond</code></figcaption>
+        </figure>
+        <figure>
+          <img src="/screenshots/cli-scores.png" width="1500" height="900" alt="Diamond CLI scoreboard" />
+          <figcaption><b>Scoreboard</b> — <code>diamond scores</code></figcaption>
+        </figure>
+        <figure>
+          <img src="/screenshots/cli-standings.png" width="1500" height="900" alt="Diamond CLI standings" />
+          <figcaption><b>Standings</b> — <code>diamond standings</code></figcaption>
+        </figure>
+        <figure>
+          <img src="/screenshots/cli-leaders.png" width="1500" height="900" alt="Diamond CLI stat leaders" />
+          <figcaption><b>Leaders</b> — <code>diamond leaders</code></figcaption>
+        </figure>
+        <figure class="span-2">
+          <img src="/screenshots/cli-diamondgpt.png" width="1500" height="900"
+               alt="DiamondGPT in the terminal — answering an MLB question with live data" />
+          <figcaption><b>DiamondGPT ✨ in the terminal</b> — ask in plain English, answered with live data</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule" />
+
+  <!-- LIVE ALERTS -->
+  <section class="section" id="alerts">
+    <div class="wrap">
+      <div class="split">
+        <div class="split-copy">
+          <p class="eyebrow">Live alerts</p>
+          <h2>Box-score alerts, in the background.</h2>
+          <p>
+            Press <code>n</code> on any game in the scoreboard and Diamond watches it for
+            you — native desktop notifications when a run scores or the game goes final,
+            even while you're in another view or another app.
+          </p>
+          <ul class="feature-list">
+            <li>Desktop notifications on every run and the final</li>
+            <li>Polls live scores every 30 seconds in the background</li>
+            <li>Toggle per game with <code>n</code> — fires from any view</li>
+          </ul>
+        </div>
+        <div class="split-media">
+          <div class="notif-stack">
+            <div class="notif-toast">
+              <div class="notif-icon" aria-hidden="true">⚾</div>
+              <div>
+                <div class="notif-title">Run Scored</div>
+                <div class="notif-body">Blue Jays 3, Yankees 2</div>
+              </div>
+              <div class="notif-app">Diamond</div>
+            </div>
+            <div class="notif-toast">
+              <div class="notif-icon" aria-hidden="true">⚾</div>
+              <div>
+                <div class="notif-title">Game Over</div>
+                <div class="notif-body">Final: Dodgers 5, Padres 4</div>
+              </div>
+              <div class="notif-app">Diamond</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule" />
+
+  <!-- MCP -->
+  <section class="section" id="mcp">
+    <div class="wrap">
+      <div class="split">
+        <div class="split-copy">
+          <p class="eyebrow">Model Context Protocol</p>
+          <h2>Plug MLB into any AI client.</h2>
+          <p>
+            <code>diamond mcp</code> runs a Model Context Protocol server over stdio,
+            exposing the same 18 live MLB tools DiamondGPT uses. Point Claude Desktop,
+            your IDE, or any MCP client at it and your assistant can pull real baseball
+            data — scores, standings, stats, and more.
+          </p>
+          <ul class="feature-list">
+            <li>The same 18 live MLB tools as DiamondGPT</li>
+            <li>stdio transport — works with Claude Desktop, Cursor, and friends</li>
+            <li>One command, no extra setup</li>
+          </ul>
+        </div>
+        <div class="split-media">
+          <div class="install">
+            <div class="install-head"><span class="num">◆</span> Start the server</div>
+            <pre><code><span class="p">diamond</span> mcp</code></pre>
+          </div>
+          <div class="install" style="margin-top:16px">
+            <div class="install-head"><span class="num">◆</span> Client config</div>
+            <pre><code>&#123;
+  <span class="c">"mcpServers"</span>: &#123;
+    <span class="c">"diamond"</span>: &#123;
+      <span class="c">"command"</span>: <span class="p">"diamond"</span>,
+      <span class="c">"args"</span>: [<span class="p">"mcp"</span>]
+    &#125;
+  &#125;
+&#125;</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <div>
+        <a class="brand" href="/" aria-label="Diamond home" style="margin-bottom:16px">
+          <span class="brand-mark" aria-hidden="true">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12h4l3 8 4-16 3 8h6" />
+            </svg>
+          </span>
+          <span class="brand-name">DIAMOND</span>
+        </a>
+        <p class="footer-note">
+          Developed by <a class="credit" href="https://github.com/xavidop">Xavier Portilla Edo</a>.<br />
+          Data from the public MLB Stats API. Diamond is not affiliated with MLB.
+          All data © MLB Advanced Media.
+        </p>
+      </div>
+      <nav class="footer-links" aria-label="Footer">
+        <a href={WEB_APP}>Web app</a>
+        <a href={REPO}>GitHub</a>
+        <a href={TAP}>Homebrew tap</a>
+        <a href={REPO + '/pkgs/container/diamond'}>Docker images</a>
+      </nav>
+    </div>
+  </footer>
+</Layout>

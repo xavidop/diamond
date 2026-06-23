@@ -1,0 +1,11 @@
+# build output
+dist/
+# deps
+node_modules/
+# astro generated types/cache
+.astro/
+# screenshots are synced from docs/screenshots at build time (not committed here)
+public/screenshots/
+# env
+.env
+.env.production

@@ -1,0 +1,7 @@
+# syntax=docker/dockerfile:1
+# Minimal runtime image used by GoReleaser. It copies the prebuilt `diamond`
+# binary (already cross-compiled by GoReleaser) rather than building from source.
+FROM alpine:latest
+RUN apk add --no-cache ca-certificates
+COPY diamond /usr/local/bin/diamond
+ENTRYPOINT ["diamond"]

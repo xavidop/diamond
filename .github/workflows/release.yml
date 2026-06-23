@@ -1,0 +1,45 @@
+name: Release
+
+# Determines the next version from conventional commits, updates CHANGELOG.md,
+# and pushes the vX.Y.Z tag. Pushing the tag with RELEASE_TOKEN (a PAT) is what
+# triggers the GoReleaser workflow — a tag pushed with the default GITHUB_TOKEN
+# would not trigger further workflows. The release commit message must NOT carry
+# [skip ci]: the tag points at that commit, and [skip ci] there suppresses the
+# tag-triggered GoReleaser run. paths-ignore keeps the changelog-only release
+# commit from pointlessly re-running this workflow.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "CHANGELOG.md"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: semantic-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: npx semantic-release

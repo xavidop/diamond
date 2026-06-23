@@ -1,0 +1,105 @@
+# GoReleaser config for the Diamond CLI.
+# Runs on tag push (vX.Y.Z) after semantic-release creates the tag.
+# Docs: https://goreleaser.com
+version: 2
+
+project_name: diamond
+
+before:
+  hooks:
+    - sh -c "cd cli && go mod download"
+
+builds:
+  - id: diamond
+    dir: ./cli
+    main: .
+    binary: diamond
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/xavidop/diamond/cli/internal/version.Version={{ .Version }}
+      - -X github.com/xavidop/diamond/cli/internal/version.Commit={{ .Commit }}
+      - -X github.com/xavidop/diamond/cli/internal/version.Date={{ .Date }}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: diamond
+    formats:
+      - tar.gz
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
+      - "Merge "
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 0
+    - title: Bug fixes
+      regexp: '^.*?fix(\(.+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
+
+dockers_v2:
+  - id: diamond
+    images:
+      - "ghcr.io/xavidop/diamond"
+    tags:
+      - "{{ .Version }}"
+      - "latest"
+    dockerfile: cli/Dockerfile.goreleaser
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    labels:
+      org.opencontainers.image.title: "{{ .ProjectName }}"
+      org.opencontainers.image.version: "{{ .Version }}"
+      org.opencontainers.image.revision: "{{ .FullCommit }}"
+      org.opencontainers.image.source: "https://github.com/xavidop/diamond"
+
+homebrew_casks:
+  - name: diamond
+    repository:
+      owner: xavidop
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Casks
+    homepage: "https://github.com/xavidop/diamond"
+    description: "⚾ MLB stats in your terminal"
+    # Remove the macOS quarantine attribute so the unsigned binary runs.
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/diamond"]
+          end
+
+release:
+  github:
+    owner: xavidop
+    name: diamond

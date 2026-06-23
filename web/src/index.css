@@ -1,0 +1,183 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-pitch-950 text-white/90 antialiased font-sans;
+    background-image:
+      radial-gradient(900px 500px at 80% -10%, rgba(232,255,71,0.05), transparent 60%),
+      radial-gradient(600px 500px at -10% 20%, rgba(80,60,180,0.06), transparent 60%);
+    background-attachment: fixed;
+  }
+
+  /* ── Light mode ──────────────────────────────────────────── */
+
+  /* Root container + body */
+  html.light .diamond-app-root { background-color: #f0ede6 !important; }
+  html.light body { @apply bg-[#f0ede6] text-pitch-800; background-image: none; }
+
+  /* Chrome: sidebar, topbar, bottom tab bar */
+  html.light .diamond-chrome {
+    background-color: #e5e2db !important;
+    border-color: rgba(0,0,0,0.09) !important;
+  }
+  html.light .diamond-chrome-inner { border-color: rgba(0,0,0,0.08) !important; }
+  html.light .diamond-chrome .text-white { color: #13131e !important; }
+  html.light .diamond-chrome [class*="text-white/"] { color: rgba(0,0,0,0.45) !important; }
+  html.light .diamond-chrome .text-volt-500 { color: #5a6800 !important; }
+  html.light .sidebar-search-btn {
+    background: rgba(0,0,0,0.07) !important;
+    border-color: rgba(0,0,0,0.11) !important;
+    color: rgba(0,0,0,0.5) !important;
+  }
+  html.light .sidebar-search-btn:hover {
+    background: rgba(0,0,0,0.11) !important;
+    color: rgba(0,0,0,0.7) !important;
+  }
+
+  /* Content: flip all white-on-dark text to dark (scoped to main only, not chrome) */
+  html.light .diamond-app-root main .text-white { color: #13131e !important; }
+  html.light .diamond-app-root main [class*="text-white/"] { color: rgba(13,13,20,0.6) !important; }
+
+  /* Volt accents: darker olive-green for light bg */
+  html.light .diamond-app-root main .text-volt-500,
+  html.light .diamond-app-root main .text-volt-400,
+  html.light .diamond-app-root main .live-badge,
+  html.light .diamond-app-root main .page-eyebrow { color: #6b7a00 !important; }
+  html.light .diamond-app-root main .page-title { color: #13131e !important; }
+
+  /* pitch-* dark surface bg → transparent light neutrals (main only!) */
+  html.light .diamond-app-root main [class*="bg-pitch-"] { background-color: rgba(0,0,0,0.04) !important; }
+
+  /* Gradient stops */
+  html.light .diamond-app-root main [class*="from-pitch-"] {
+    --tw-gradient-from: rgba(0,0,0,0.04) var(--tw-gradient-from-position) !important;
+  }
+  html.light .diamond-app-root main [class*="to-pitch-"] {
+    --tw-gradient-to: transparent var(--tw-gradient-to-position) !important;
+  }
+
+  /* White-opacity borders → dark equivalent (main only!) */
+  html.light .diamond-app-root main [class*="border-white/"] { border-color: rgba(0,0,0,0.09) !important; }
+
+  /* Component overrides */
+  html.light .card { @apply bg-white border-[rgba(0,0,0,0.08)] shadow-sm; }
+  html.light .btn { @apply bg-white/70 hover:bg-white border-black/10 text-pitch-800; }
+  html.light .input { @apply bg-white border-black/10 text-pitch-800 placeholder:text-pitch-400; }
+  html.light .pill { @apply bg-black/5 border-[rgba(0,0,0,0.08)] text-pitch-700; }
+  html.light .table-base thead th,
+  html.light .table-base tbody td { @apply border-[rgba(0,0,0,0.08)]; }
+  html.light .table-base thead th { @apply text-pitch-600; }
+  html.light .table-base tbody tr:hover { @apply bg-black/[0.025]; }
+  html.light .nav-item { @apply text-pitch-700 hover:text-pitch-900 hover:bg-black/[0.06]; }
+  html.light .nav-item-active { @apply text-[#5a6800] bg-[#5a6800]/10; }
+  html.light .page-eyebrow { color: #6b7a00 !important; }
+
+  /* Color-blind safe palette (IBM 5-color) */
+  html.cbsafe {
+    --cb-volt-300: #ffd29b;
+    --cb-volt-400: #ff9a52;
+    --cb-volt-500: #fe6100;
+    --cb-volt-600: #e35400;
+    --cb-good: #648fff;
+    --cb-bad:  #fe6100;
+  }
+  html.cbsafe .text-volt-300 { color: var(--cb-volt-300); }
+  html.cbsafe .text-volt-400 { color: var(--cb-volt-400); }
+  html.cbsafe .text-volt-500 { color: var(--cb-volt-500); }
+  html.cbsafe .bg-volt-500   { background-color: var(--cb-volt-500); }
+  html.cbsafe .bg-volt-500\/\[0\.06\] { background-color: rgba(254,97,0,0.06); }
+  html.cbsafe .border-volt-500\/20 { border-color: rgba(254,97,0,0.2); }
+  html.cbsafe .border-volt-500\/30 { border-color: rgba(254,97,0,0.3); }
+  html.cbsafe .from-volt-500 { --tw-gradient-from: var(--cb-volt-500); }
+  html.cbsafe [data-cb-bad]  { background-color: var(--cb-bad)  !important; color: white; }
+  html.cbsafe [data-cb-good] { background-color: var(--cb-good) !important; color: white; }
+
+  ::selection {
+    @apply bg-volt-500/30 text-white;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl bg-pitch-800 border border-white/[0.08] shadow-card;
+  }
+  .card-pad {
+    @apply p-4 sm:p-5;
+  }
+  .btn {
+    @apply inline-flex items-center gap-2 rounded-lg px-3 py-1.5
+           font-display font-bold text-xs tracking-wider uppercase
+           bg-pitch-800 hover:bg-pitch-700 border border-white/[0.08]
+           transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply bg-volt-500 hover:bg-volt-400 text-black border-transparent;
+  }
+  .btn-accent {
+    @apply bg-volt-500/[0.12] hover:bg-volt-500/[0.2] text-volt-500 border-volt-500/30;
+  }
+  .input {
+    @apply w-full rounded-lg bg-pitch-950/70 border border-white/10
+           px-3 py-2 text-sm font-sans placeholder:text-white/30
+           focus:outline-none focus:ring-2 focus:ring-volt-500/50 focus:border-transparent;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1 rounded-sm px-2 py-0.5
+           font-display font-bold text-[9px] tracking-[0.12em] uppercase
+           bg-white/[0.06] border border-white/[0.08];
+  }
+  .table-base {
+    @apply w-full text-sm;
+  }
+  .table-base thead th {
+    @apply text-left font-display font-bold text-[9px] tracking-widest uppercase
+           text-white/30 border-b border-white/5 px-3 py-2;
+  }
+  .table-base tbody td {
+    @apply px-3 py-2 border-b border-white/[0.04];
+  }
+  .table-base tbody tr:hover {
+    @apply bg-white/[0.025];
+  }
+
+  /* ── Editorial helpers ──────────────────────────────── */
+  .page-eyebrow {
+    @apply font-display font-bold text-[11px] tracking-[0.22em] uppercase text-volt-500;
+  }
+  .page-title {
+    @apply font-display font-black text-5xl sm:text-6xl uppercase leading-none text-white tracking-tight;
+  }
+  .stat-val {
+    @apply font-mono text-3xl leading-none tabular-nums;
+  }
+
+  /* ── Sidebar nav ─────────────────────────────────────── */
+  .nav-item {
+    @apply flex items-center gap-2.5 px-3 py-2 mx-2 rounded-lg
+           font-display font-semibold text-[13px] tracking-[0.04em] uppercase
+           text-white/50 hover:text-white/80 hover:bg-white/[0.04]
+           transition-colors duration-150;
+  }
+  .nav-item-active {
+    @apply text-volt-500 bg-volt-500/[0.06];
+  }
+
+  /* ── Live badge ──────────────────────────────────────── */
+  .live-badge {
+    @apply inline-flex items-center gap-1.5 font-display font-bold
+           text-[9px] tracking-[0.12em] uppercase text-volt-500;
+  }
+}
+
+/* Scrollbars (WebKit) */
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 999px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
