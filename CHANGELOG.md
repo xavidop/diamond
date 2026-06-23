@@ -4,6 +4,16 @@
 ### Bug Fixes
 
 * **ci:** use classic docker pipe so the CLI image build finds the binary ([f25144d](https://github.com/xavidop/diamond/commit/f25144d99922e03d9eaae2aafc9541b6d291cee5))
+* imrpove images ([f5a3390](https://github.com/xavidop/diamond/commit/f5a339075b05b36c3237c8b416837fef6f66d855))
+* path ([81d7611](https://github.com/xavidop/diamond/commit/81d76119b7eed9a2f5687c1391a9d4f1542740c5))
+* release ([b511eec](https://github.com/xavidop/diamond/commit/b511eecb8fa3fd70022f2d817fef2f034dadad38))
+
+# 1.0.0 (2026-06-23)
+
+
+### Bug Fixes
+
+* **ci:** use classic docker pipe so the CLI image build finds the binary ([f25144d](https://github.com/xavidop/diamond/commit/f25144d99922e03d9eaae2aafc9541b6d291cee5))
 * path ([81d7611](https://github.com/xavidop/diamond/commit/81d76119b7eed9a2f5687c1391a9d4f1542740c5))
 
 ## [1.0.1](https://github.com/xavidop/diamond/compare/v1.0.0...v1.0.1) (2026-06-23)
