@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- build the static frontend ----
-FROM node:20-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -9,7 +9,7 @@ COPY . .
 RUN npm run build
 
 # ---- runtime: Node server serving dist/ + /api ----
-FROM node:20-alpine AS runtime
+FROM node:26-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
