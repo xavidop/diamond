@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/xavidop/diamond/compare/v1.0.2...v1.0.3) (2026-06-24)
+
+
+### Bug Fixes
+
+* build ([4a11351](https://github.com/xavidop/diamond/commit/4a11351847d6503a73550650cc3c129537392ebf))
+
 ## [1.0.2](https://github.com/xavidop/diamond/compare/v1.0.1...v1.0.2) (2026-06-24)
 
 
