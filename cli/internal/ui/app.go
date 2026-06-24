@@ -1,11 +1,13 @@
 package ui
 
 import (
+	"fmt"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/xavidop/diamond/cli/internal/mlb"
+	"github.com/xavidop/diamond/cli/internal/version"
 )
 
 // ViewID identifies which content view is active.
@@ -49,6 +51,9 @@ type SportChangedMsg struct{ Sport mlb.Sport }
 type ErrMsg struct{ Err error }
 type TickMsg struct{}
 
+// updateAvailableMsg is sent when a newer CLI version is found on GitHub.
+type updateAvailableMsg struct{ Latest string }
+
 func Tick(d time.Duration) tea.Cmd {
 	return tea.Tick(d, func(time.Time) tea.Msg { return TickMsg{} })
 }
@@ -77,12 +82,27 @@ func notifyPollCmd(sportID int) tea.Cmd {
 	}
 }
 
+// checkForUpdate queries GitHub for the latest release in the background.
+func checkForUpdate() tea.Cmd {
+	return func() tea.Msg {
+		latest := version.CheckLatest()
+		if version.IsNewer(version.Version, latest) {
+			return updateAvailableMsg{Latest: latest}
+		}
+		return nil
+	}
+}
+
 type focusZone int
 
 const (
 	focusSidebar focusZone = iota
 	focusContent
 )
+
+// SuppressUpdateCheck disables the background new-version check when set to
+// true before creating the App (e.g. via --no-update-notifier flag).
+var SuppressUpdateCheck bool
 
 // sidebarMinTotal is the terminal width below which the sidebar auto-collapses.
 const sidebarMinTotal = 96
@@ -105,6 +125,9 @@ type App struct {
 	// last-seen scores. Polled by notifyTick so alerts fire from any view.
 	notifySubs map[int]bool
 	notifyPrev map[int][2]int
+
+	// Update notification: non-empty when a newer release is available.
+	updateBanner string
 
 	sidebar      Sidebar
 	leaguePicker LeaguePickerModel
@@ -191,6 +214,9 @@ func NewApp(startView ViewID, gamePk int, sport mlb.Sport, query ...string) App 
 
 func (a App) Init() tea.Cmd {
 	cmds := []tea.Cmd{animTick(), a.home.Init(), notifyTick()}
+	if !SuppressUpdateCheck {
+		cmds = append(cmds, checkForUpdate())
+	}
 	if a.view != ViewHome {
 		if c := a.activeInit(); c != nil {
 			cmds = append(cmds, c)
@@ -215,6 +241,10 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case animTickMsg:
 		animFrame++
 		return a, animTick()
+
+	case updateAvailableMsg:
+		a.updateBanner = fmt.Sprintf("Update available: v%s → v%s  (brew upgrade diamond)", version.Version, msg.Latest)
+		return a, nil
 
 	case notifyTickMsg:
 		// Keep the heartbeat alive; only hit the network when something is subscribed.
@@ -659,6 +689,14 @@ func (a App) View() string {
 	}
 
 	content := lipgloss.NewStyle().Width(a.contentWidth()).Render(a.contentView())
+	if a.updateBanner != "" {
+		banner := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#e8ff47")).
+			Bold(true).
+			Padding(0, 1).
+			Render("↑ " + a.updateBanner)
+		content = content + "\n" + banner
+	}
 	if a.collapsed {
 		return content
 	}
