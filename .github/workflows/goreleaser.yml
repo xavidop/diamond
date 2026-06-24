@@ -92,7 +92,7 @@ jobs:
           echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push web image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: web
           file: web/Dockerfile
