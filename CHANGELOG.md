@@ -1,3 +1,10 @@
+## [1.3.2](https://github.com/xavidop/diamond/compare/v1.3.1...v1.3.2) (2026-06-25)
+
+
+### Bug Fixes
+
+* **ci:** deploy live via firebase CLI, tolerate no-op release ([deb2dee](https://github.com/xavidop/diamond/commit/deb2dee18ffdd59b9ad1c61f45427418f0b073f0))
+
 ## [1.3.1](https://github.com/xavidop/diamond/compare/v1.3.0...v1.3.1) (2026-06-25)
 
 
