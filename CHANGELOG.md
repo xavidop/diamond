@@ -1,3 +1,30 @@
+# [1.1.0](https://github.com/xavidop/diamond/compare/v1.0.3...v1.1.0) (2026-06-25)
+
+
+### Bug Fixes
+
+* switch to [@xavidop](https://github.com/xavidop) ([5775997](https://github.com/xavidop/diamond/commit/5775997afbdb42f95b5132faf1336978989b07e3))
+* **web:** clear pending toast timers on unmount ([c4f5f80](https://github.com/xavidop/diamond/commit/c4f5f80b8373fbca10d28d768aa530536af2a422))
+* **web:** notification menu placement + per-game bell on game page ([ddab26c](https://github.com/xavidop/diamond/commit/ddab26c0246383c92a1cbc5a64e6ce8f476516a5))
+* **web:** repair light-mode component styles + fill-width sidebar footer ([7f660ff](https://github.com/xavidop/diamond/commit/7f660ffbda45a1c09894b7222030a5e679008502))
+* **web:** reset notification baseline on disable; document native-nav tradeoff ([4dc3d98](https://github.com/xavidop/diamond/commit/4dc3d9839334aae7a0a8130d004526d6327b774a))
+* **web:** restyle notification controls to match design system ([8c076e6](https://github.com/xavidop/diamond/commit/8c076e620db6d91693b65508d17cf6664e801008))
+* **web:** stack sidebar footer so the notifications bell fits inside it ([651c7be](https://github.com/xavidop/diamond/commit/651c7be5011dac57427f2362509278afe3304a84))
+
+
+### Features
+
+* add updates to the CLI ([824deab](https://github.com/xavidop/diamond/commit/824deabf571ae8d31b26419e551dbb0ce2091aa4))
+* **web:** add notification diff core + vitest ([c83030f](https://github.com/xavidop/diamond/commit/c83030f9bc1f768da31c14bcdffe2c9a51ca124a))
+* **web:** add notification message builder + native firing ([9147aea](https://github.com/xavidop/diamond/commit/9147aea7f1c23965a171474679c364f17e6c6e8b))
+* **web:** add notification polling hook ([f5efdd1](https://github.com/xavidop/diamond/commit/f5efdd1679fc6d479122583d57161fc334ddd00f))
+* **web:** add notifications bell, feed dropdown, and settings ([e7564a4](https://github.com/xavidop/diamond/commit/e7564a4756a12bdd62705975de94bb6fe4c396f5))
+* **web:** add notifications context ([41ecd80](https://github.com/xavidop/diamond/commit/41ecd80e053b403a2b6b1d579aba856c4fcc5c01))
+* **web:** add per-game notify bell to scoreboard cards ([6e1aaeb](https://github.com/xavidop/diamond/commit/6e1aaeb017191f02b49c38a5bc01dc233bc06a3e))
+* **web:** add per-game notify bell to Today cards; add Playwright for UI verification ([3fc18a0](https://github.com/xavidop/diamond/commit/3fc18a06ceab9e5222f9264a9788470821544105))
+* **web:** add toast context + viewport ([582661b](https://github.com/xavidop/diamond/commit/582661ba69ffa1a1775b563ba2886fcf7e373051))
+* **web:** wire notification providers, poller, and toast viewport ([6778b9e](https://github.com/xavidop/diamond/commit/6778b9e7babc351239a8f3eb214c412246f66f10))
+
 ## [1.0.3](https://github.com/xavidop/diamond/compare/v1.0.2...v1.0.3) (2026-06-24)
 
 
