@@ -11,6 +11,7 @@ import PitchZone from "../components/ui/PitchZone";
 import SprayChart from "../components/ui/SprayChart";
 import WinProbability from "../components/ui/WinProbability";
 import GameInfo from "../components/ui/GameInfo";
+import NotifyButton from "../components/ui/NotifyButton";
 import { useState } from "react";
 import { cn } from "../lib/utils";
 
@@ -47,7 +48,14 @@ export default function GamePage() {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="relative">
+        <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] py-1 pl-3 pr-1 text-[11px] uppercase tracking-wide text-pitch-300/80">
+          <span className="hidden sm:inline">Notify</span>
+          <NotifyButton
+            gamePk={Number(id)}
+            label={`${away?.teamName ?? "Away"} @ ${home?.teamName ?? "Home"}`}
+          />
+        </div>
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <TeamBlock team={away} score={awayScore} />
           <div className="text-center">

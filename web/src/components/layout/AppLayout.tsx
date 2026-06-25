@@ -332,7 +332,7 @@ function SidebarContent({
           >
             {theme === "dark" ? <Sun size={12} /> : <Moon size={12} />}
           </button>
-          <NotificationsBell />
+          <NotificationsBell placement="top" />
         </div>
       </div>
     </>

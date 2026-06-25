@@ -3,9 +3,20 @@ import { Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useNotifications } from "../../contexts/NotificationsContext";
 import { buildMessage } from "../../lib/notifyEmit";
+import { cn } from "../../lib/utils";
 import NotificationSettings from "./NotificationSettings";
 
-export default function NotificationsBell() {
+/**
+ * `placement` controls which way the panel opens so it never lands off-screen:
+ * - "bottom" (default): opens downward, right-aligned — for top bars.
+ * - "top": opens upward, left-aligned — for the sidebar footer at the bottom
+ *   of the viewport, where a downward panel would be clipped below the fold.
+ */
+export default function NotificationsBell({
+  placement = "bottom",
+}: {
+  placement?: "top" | "bottom";
+}) {
   const { feed, unreadCount, markFeedRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -43,9 +54,19 @@ export default function NotificationsBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-[300px] overflow-hidden rounded-xl border border-white/10 bg-pitch-900 shadow-xl diamond-chrome">
-          <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-pitch-400">
-            Recent
+        <div
+          className={cn(
+            "absolute z-50 w-[300px] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-xl border border-white/10 bg-pitch-900 shadow-xl diamond-chrome",
+            placement === "top" ? "bottom-full left-0 mb-2" : "top-full right-0 mt-2"
+          )}
+        >
+          <div className="flex items-center justify-between px-3 py-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-pitch-400">
+              Notifications
+            </span>
+            {unreadCount > 0 && (
+              <span className="text-[11px] text-volt-400">{unreadCount} new</span>
+            )}
           </div>
           <div className="max-h-[280px] overflow-y-auto">
             {feed.length === 0 ? (
