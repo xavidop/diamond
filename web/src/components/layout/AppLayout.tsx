@@ -312,9 +312,9 @@ function SidebarContent({
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-white/[0.05] p-3 flex flex-col items-start gap-2 diamond-chrome-inner">
+      <div className="border-t border-white/[0.05] p-3 flex flex-col gap-2 diamond-chrome-inner">
         <SportPicker />
-        <div className="flex w-full items-center gap-1.5">
+        <div className="flex w-full items-center justify-between">
           <button
             onClick={toggleCb}
             className={cn("btn p-1.5", cbSafe && "bg-volt-500/[0.12] border-volt-500/30 text-volt-500")}

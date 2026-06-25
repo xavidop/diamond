@@ -66,17 +66,10 @@
   /* White-opacity borders → dark equivalent (main only!) */
   html.light .diamond-app-root main [class*="border-white/"] { border-color: rgba(0,0,0,0.09) !important; }
 
-  /* Component overrides */
-  html.light .card { @apply bg-white border-[rgba(0,0,0,0.08)] shadow-sm; }
-  html.light .btn { @apply bg-white/70 hover:bg-white border-black/10 text-pitch-800; }
-  html.light .input { @apply bg-white border-black/10 text-pitch-800 placeholder:text-pitch-400; }
-  html.light .pill { @apply bg-black/5 border-[rgba(0,0,0,0.08)] text-pitch-700; }
-  html.light .table-base thead th,
-  html.light .table-base tbody td { @apply border-[rgba(0,0,0,0.08)]; }
-  html.light .table-base thead th { @apply text-pitch-600; }
-  html.light .table-base tbody tr:hover { @apply bg-black/[0.025]; }
-  html.light .nav-item { @apply text-pitch-700 hover:text-pitch-900 hover:bg-black/[0.06]; }
-  html.light .nav-item-active { @apply text-[#5a6800] bg-[#5a6800]/10; }
+  /* NOTE: light overrides for component classes (.card/.btn/.input/.pill/
+     .nav-item/.table-base) live in @layer components below, not here — a
+     @layer base rule loses to the component definitions in @layer components
+     regardless of specificity, so these must share that layer to win. */
   html.light .page-eyebrow { color: #6b7a00 !important; }
 
   /* Color-blind safe palette (IBM 5-color) */
@@ -174,6 +167,20 @@
     @apply inline-flex items-center gap-1.5 font-display font-bold
            text-[9px] tracking-[0.12em] uppercase text-volt-500;
   }
+
+  /* ── Light-mode component overrides ──────────────────────
+     These must live in @layer components (same layer as the defs above)
+     so html.light's higher specificity wins; in @layer base they lost. */
+  html.light .card { @apply bg-white border-[rgba(0,0,0,0.08)] shadow-sm; }
+  html.light .btn { @apply bg-white/70 hover:bg-white border-black/10 text-pitch-800; }
+  html.light .input { @apply bg-white border-black/10 text-pitch-800 placeholder:text-pitch-400; }
+  html.light .pill { @apply bg-black/5 border-[rgba(0,0,0,0.08)] text-pitch-700; }
+  html.light .table-base thead th,
+  html.light .table-base tbody td { @apply border-[rgba(0,0,0,0.08)]; }
+  html.light .table-base thead th { @apply text-pitch-600; }
+  html.light .table-base tbody tr:hover { @apply bg-black/[0.025]; }
+  html.light .nav-item { @apply text-pitch-700 hover:text-pitch-900 hover:bg-black/[0.06]; }
+  html.light .nav-item-active { @apply text-[#5a6800] bg-[#5a6800]/10; }
 }
 
 /* Scrollbars (WebKit) */
