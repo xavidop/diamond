@@ -61,6 +61,10 @@ jobs:
       - name: Deploy to live channel
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
+          # Pin to the v13 line: firebase-tools 14/15 throw FAILED_PRECONDITION
+          # ("supplied version is the current active version") on a no-op
+          # release when CI rebuilds content identical to what's already live.
+          firebaseToolsVersion: "13"
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DIAMOND_500520 }}
           projectId: diamond-500520
@@ -84,6 +88,7 @@ jobs:
       - name: Deploy to a preview channel
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
+          firebaseToolsVersion: "13"
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DIAMOND_500520 }}
           projectId: diamond-500520
