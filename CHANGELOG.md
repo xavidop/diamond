@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/xavidop/diamond/compare/v1.3.0...v1.3.1) (2026-06-25)
+
+
+### Bug Fixes
+
+* **ci:** pin firebase-tools to v13 to avoid no-op release error ([9040e46](https://github.com/xavidop/diamond/commit/9040e461501e880098bded2d699fdd3ad6ba9380))
+
 # [1.3.0](https://github.com/xavidop/diamond/compare/v1.2.1...v1.3.0) (2026-06-25)
 
 
