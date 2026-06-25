@@ -36,7 +36,7 @@ export default function SportPicker() {
           role="listbox"
           className={cn(
             "absolute left-0 bottom-full mb-2 w-72 rounded-xl border border-white/10",
-            "bg-pitch-900/95 backdrop-blur-md shadow-card z-50",
+            "bg-pitch-900/95 backdrop-blur-md shadow-card z-50 diamond-chrome",
             "max-h-[60vh] overflow-y-auto py-1"
           )}
         >
@@ -51,8 +51,8 @@ export default function SportPicker() {
                 }}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2 text-left text-sm",
-                  "hover:bg-white/5",
-                  active && "bg-white/10"
+                  "hover:bg-volt-500/10",
+                  active && "bg-volt-500/10"
                 )}
               >
                 <span
@@ -66,8 +66,8 @@ export default function SportPicker() {
                 >
                   {s.abbreviation}
                 </span>
-                <span className="flex-1 truncate">{s.name}</span>
-                {active && <Check size={14} className="text-pitch-300" />}
+                <span className="flex-1 truncate text-white">{s.name}</span>
+                {active && <Check size={14} className="text-volt-500" />}
               </button>
             );
           })}
