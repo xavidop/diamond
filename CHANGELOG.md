@@ -1,3 +1,11 @@
+# [1.3.0](https://github.com/xavidop/diamond/compare/v1.2.1...v1.3.0) (2026-06-25)
+
+
+### Features
+
+* automate firebase hosting deploy ([b2886db](https://github.com/xavidop/diamond/commit/b2886dbe91920e0bdd6aa1be6f7b3eacc5556b86))
+* firebase deploment ([cc9d766](https://github.com/xavidop/diamond/commit/cc9d7661501f09b9332acf8904c956197a797efa))
+
 ## [1.2.1](https://github.com/xavidop/diamond/compare/v1.2.0...v1.2.1) (2026-06-25)
 
 
