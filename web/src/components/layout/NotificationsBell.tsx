@@ -43,11 +43,12 @@ export default function NotificationsBell({
         type="button"
         onClick={toggle}
         title="Notifications"
-        className="relative inline-flex h-8 w-8 items-center justify-center rounded-lg text-pitch-200 hover:bg-white/5 hover:text-white"
+        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+        className={cn("btn relative p-1.5", open && "btn-accent")}
       >
-        <Bell size={16} />
+        <Bell size={14} />
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-volt-500 px-1 text-[10px] font-bold text-black">
+          <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-volt-500 px-1 text-[10px] font-bold text-black">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}

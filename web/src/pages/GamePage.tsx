@@ -48,17 +48,10 @@ export default function GamePage() {
 
   return (
     <div className="space-y-6">
-      <Card className="relative">
-        <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] py-1 pl-3 pr-1 text-[11px] uppercase tracking-wide text-pitch-300/80">
-          <span className="hidden sm:inline">Notify</span>
-          <NotifyButton
-            gamePk={Number(id)}
-            label={`${away?.teamName ?? "Away"} @ ${home?.teamName ?? "Home"}`}
-          />
-        </div>
+      <Card>
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <TeamBlock team={away} score={awayScore} />
-          <div className="text-center">
+          <div className="flex flex-col items-center text-center">
             <div className="text-xs uppercase tracking-wider text-pitch-300/70">
               {game?.status?.detailedState}
             </div>
@@ -73,6 +66,12 @@ export default function GamePage() {
               <span>S {linescore?.strikes ?? 0}</span>
               <span>O {linescore?.outs ?? 0}</span>
             </div>
+            <NotifyButton
+              variant="button"
+              className="mt-3"
+              gamePk={Number(id)}
+              label={`${away?.teamName ?? "Away"} @ ${home?.teamName ?? "Home"}`}
+            />
           </div>
           <TeamBlock team={home} score={homeScore} align="right" />
         </div>
