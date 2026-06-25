@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -27,6 +28,9 @@ const AUTO_DISMISS_MS = 6000;
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const seq = useRef(0);
+  const timers = useRef<Set<ReturnType<typeof window.setTimeout>>>(new Set());
+
+  useEffect(() => () => { timers.current.forEach((h) => window.clearTimeout(h)); }, []);
 
   const dismiss = useCallback((id: number) => {
     setToasts((cur) => cur.filter((t) => t.id !== id));
@@ -36,7 +40,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (t: Omit<Toast, "id">) => {
       const id = ++seq.current;
       setToasts((cur) => [...cur, { ...t, id }].slice(-4));
-      window.setTimeout(() => dismiss(id), AUTO_DISMISS_MS);
+      const handle = window.setTimeout(() => {
+        dismiss(id);
+        timers.current.delete(handle);
+      }, AUTO_DISMISS_MS);
+      timers.current.add(handle);
     },
     [dismiss]
   );
