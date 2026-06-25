@@ -20,6 +20,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { todayIso } from "../../lib/utils";
 import ToastViewport from "../ui/ToastViewport";
 import { useNotificationPoller } from "../../hooks/useNotificationPoller";
+import NotificationsBell from "./NotificationsBell";
 
 const MAIN_NAV = [
   { to: "/",            label: "Today",      icon: Home,        end: true  },
@@ -132,6 +133,7 @@ export default function AppLayout() {
             >
               <Search size={14} />
             </button>
+            <NotificationsBell />
             <button
               onClick={() => setDrawerOpen(true)}
               className="btn p-2"
@@ -330,6 +332,7 @@ function SidebarContent({
           >
             {theme === "dark" ? <Sun size={12} /> : <Moon size={12} />}
           </button>
+          <NotificationsBell />
         </div>
       </div>
     </>
