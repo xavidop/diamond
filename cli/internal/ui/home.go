@@ -174,7 +174,7 @@ func (m HomeModel) View() string {
 	sb.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, hrBlock, "    ", eraBlock))
 
 	site := osc8("https://diamond.xavidop.me", StyleAccent.Underline(true).Render("diamond.xavidop.me"))
-	author := osc8("https://github.com/xavidop", StyleAccent.Render("Xavier Portilla Edo"))
+	author := osc8("https://github.com/xavidop", StyleAccent.Render("@xavidop"))
 	credit := "  " + StyleDim.Render("↗ ") + site + StyleDim.Render("   ·   made by ") + author
 	sb.WriteString("\n\n" + credit)
 

@@ -133,7 +133,7 @@
 * rename diamond→pitch, accent→volt across all src files; remove old palette ([d64458b](https://github.com/xavidop/diamond/commit/d64458ba2df613f4870dd9a87a4e9228e8027853))
 * rewrite AppLayout with 200px sidebar, mobile drawer, and bottom tab bar ([6272d3d](https://github.com/xavidop/diamond/commit/6272d3dfd9b639f9a6ca67dd5c288410e142330f))
 * rewrite index.css with pitch/volt editorial design tokens ([0f68594](https://github.com/xavidop/diamond/commit/0f68594e266baecbeeb40be00386fce66b8947a8))
-* **site:** add "Developed by Xavier Portilla Edo" credit in footer ([d3f22e6](https://github.com/xavidop/diamond/commit/d3f22e63675e89f5a75f17921bfd9368b94f64f1))
+* **site:** add "Developed by @xavidop" credit in footer ([d3f22e6](https://github.com/xavidop/diamond/commit/d3f22e63675e89f5a75f17921bfd9368b94f64f1))
 * **site:** Astro landing page + GitHub Pages deploy ([8f42313](https://github.com/xavidop/diamond/commit/8f42313c05d94dde879989688ea1edee55288cd5))
 * **site:** document the CLI live-notification feature ([fbfa568](https://github.com/xavidop/diamond/commit/fbfa568bba4a09d373a18a73ddac20665507c798))
 * Task 10 — TeamPage editorial hero with prominent logo + display typography ([7326b4f](https://github.com/xavidop/diamond/commit/7326b4f19e3e6d891882386c0f8e4d195921e632))

@@ -18,7 +18,7 @@ var rootCmd = &cobra.Command{
 	Short: "⚾ MLB stats in your terminal",
 	Long: "Diamond — the beautiful game of baseball, in your terminal.\n\n" +
 		"Website: https://diamond.xavidop.me\n" +
-		"Made by Xavier Portilla Edo (https://github.com/xavidop)",
+		"Made by @xavidop (https://github.com/xavidop)",
 	Version: fmt.Sprintf("%s (commit %s, built %s)", version.Version, version.Commit, version.Date),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		ui.SuppressUpdateCheck = noUpdateNotifier || os.Getenv("DIAMOND_NO_UPDATE_NOTIFIER") != ""
