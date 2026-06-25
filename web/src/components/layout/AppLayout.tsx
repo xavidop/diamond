@@ -18,6 +18,8 @@ import ShortcutsHelp from "./ShortcutsHelp";
 import { useShortcuts } from "../../hooks/useShortcuts";
 import { useQueryClient } from "@tanstack/react-query";
 import { todayIso } from "../../lib/utils";
+import ToastViewport from "../ui/ToastViewport";
+import { useNotificationPoller } from "../../hooks/useNotificationPoller";
 
 const MAIN_NAV = [
   { to: "/",            label: "Today",      icon: Home,        end: true  },
@@ -186,8 +188,15 @@ export default function AppLayout() {
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <NotificationsRunner />
+      <ToastViewport />
     </div>
   );
+}
+
+function NotificationsRunner() {
+  useNotificationPoller();
+  return null;
 }
 
 function SidebarContent({

@@ -6,6 +6,8 @@ import { SportProvider } from "./contexts/SportContext";
 import { FavoritesProvider } from "./contexts/FavoritesContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { PinsProvider } from "./contexts/PinsContext";
+import { NotificationsProvider } from "./contexts/NotificationsContext";
+import { ToastProvider } from "./contexts/ToastContext";
 
 const TodayPage = lazy(() => import("./pages/TodayPage"));
 const ScoreboardPage = lazy(() => import("./pages/ScoreboardPage"));
@@ -47,7 +49,9 @@ export default function App() {
       <ThemeProvider>
         <FavoritesProvider>
           <PinsProvider>
-            <SportProvider>
+            <ToastProvider>
+              <NotificationsProvider>
+                <SportProvider>
               <BrowserRouter>
                 <Routes>
                   <Route element={<AppLayout />}>
@@ -78,7 +82,9 @@ export default function App() {
                   </Route>
                 </Routes>
               </BrowserRouter>
-            </SportProvider>
+                </SportProvider>
+              </NotificationsProvider>
+            </ToastProvider>
           </PinsProvider>
         </FavoritesProvider>
       </ThemeProvider>
