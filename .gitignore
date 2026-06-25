@@ -30,3 +30,5 @@ cli/diamond
 # superpowers tooling state (brainstorm/sdd working dirs, server pids)
 .superpowers/
 docs/superpowers
+
+.firebase
