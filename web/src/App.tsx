@@ -32,6 +32,7 @@ const TeamComparePage = lazy(() => import("./pages/TeamComparePage"));
 const PostseasonPage = lazy(() => import("./pages/PostseasonPage"));
 const GlossaryPage = lazy(() => import("./pages/GlossaryPage"));
 const DiamondGptPage = lazy(() => import("./pages/DiamondGptPage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,6 +79,7 @@ export default function App() {
                     <Route path="explorer" element={<ExplorerPage />} />
                     <Route path="search" element={<SearchPage />} />
                     <Route path="diamondgpt" element={<DiamondGptPage />} />
+                    <Route path="about" element={<AboutPage />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>
                 </Routes>

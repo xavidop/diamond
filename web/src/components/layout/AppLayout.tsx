@@ -3,7 +3,7 @@ import {
   CalendarDays, Trophy, Shield, Flame, TerminalSquare, Search,
   Activity, Home, GitCompare, History, Layers, Star, Sun, Moon,
   Eye, X, Award, ArrowLeftRight, MapPin, Keyboard, Zap, Crown,
-  Users, BookOpen, LayoutGrid, Sparkles,
+  Users, BookOpen, LayoutGrid, Sparkles, Info,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Suspense, useEffect, useState } from "react";
@@ -42,6 +42,7 @@ const EXPLORE_NAV = [
   { to: "/venues",       label: "Ballparks",       icon: MapPin         },
   { to: "/draft",        label: "Draft",           icon: Layers         },
   { to: "/glossary",     label: "Glossary",        icon: BookOpen       },
+  { to: "/about",        label: "About",           icon: Info           },
   { to: "/explorer",     label: "API Explorer",    icon: TerminalSquare },
 ];
 
@@ -334,6 +335,18 @@ function SidebarContent({
           </button>
           <NotificationsBell placement="top" />
         </div>
+        <p className="px-0.5 text-[10px] leading-relaxed text-white/30">
+          Built by{" "}
+          <a
+            href="https://github.com/xavidop"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-white/50 hover:text-volt-500"
+          >
+            xavidop
+          </a>{" "}
+          · for all baseball lovers
+        </p>
       </div>
     </>
   );
