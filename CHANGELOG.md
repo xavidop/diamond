@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/xavidop/diamond/compare/v1.2.0...v1.2.1) (2026-06-25)
+
+
+### Bug Fixes
+
+* change to diamond ([90507f9](https://github.com/xavidop/diamond/commit/90507f9f3f6071ed5350c04ad45b1629f7a56ec0))
+
 # [1.2.0](https://github.com/xavidop/diamond/compare/v1.1.0...v1.2.0) (2026-06-25)
 
 
