@@ -33,6 +33,12 @@ export function useNotificationPoller(): void {
     enabled,
   });
 
+  // When notifications are off, drop the diff baseline so re-enabling
+  // re-seeds silently instead of replaying everything missed while off.
+  useEffect(() => {
+    if (!enabled) prevRef.current = new Map();
+  }, [enabled]);
+
   useEffect(() => {
     if (!enabled) return;
 

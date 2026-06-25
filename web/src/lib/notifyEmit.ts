@@ -23,6 +23,7 @@ export function fireNative(e: NotifyEvent): void {
   const n = new Notification(title, { body, tag, icon: "/favicon.svg" });
   n.onclick = () => {
     window.focus();
+    // Hard nav (not SPA routing): a module-level notification handler has no router access.
     window.location.href = `/game/${e.gamePk}`;
   };
 }
