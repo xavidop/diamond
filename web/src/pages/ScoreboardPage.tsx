@@ -6,6 +6,7 @@ import { ErrorBox, SectionTitle, Spinner, Empty } from "../components/ui/Primiti
 import { cn, fmtTime, shiftDate, todayIso } from "../lib/utils";
 import { Link } from "react-router-dom";
 import { useSport } from "../contexts/SportContext";
+import NotifyButton from "../components/ui/NotifyButton";
 
 type MlbGame = {
   gamePk: number;
@@ -132,7 +133,13 @@ function GameCard({ game }: { game: MlbGame }) {
             </span>
           )}
         </div>
-        <StatusBadge isLive={isLive} isFinal={isFinal} detail={detail} game={game} />
+        <div className="flex items-center gap-1">
+          <NotifyButton
+            gamePk={game.gamePk}
+            label={`${away?.team?.name ?? "Away"} @ ${home?.team?.name ?? "Home"}`}
+          />
+          <StatusBadge isLive={isLive} isFinal={isFinal} detail={detail} game={game} />
+        </div>
       </div>
 
       <TeamRow team={away} score={away?.score} isWinner={isFinal && away?.isWinner} />
