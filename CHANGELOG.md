@@ -1,3 +1,16 @@
+# [1.2.0](https://github.com/xavidop/diamond/compare/v1.1.0...v1.2.0) (2026-06-25)
+
+
+### Bug Fixes
+
+* about ([c101b5c](https://github.com/xavidop/diamond/commit/c101b5c96d42454cff1420f07ad96b84986f58ba))
+* **web:** make league picker dropdown readable in light mode ([f23e80b](https://github.com/xavidop/diamond/commit/f23e80b42ed26d59e12469ae1f5aca1e57400854))
+
+
+### Features
+
+* about page ([a848c53](https://github.com/xavidop/diamond/commit/a848c53e1678aa9df366f50d86d4f7a6ae8704dc))
+
 # [1.1.0](https://github.com/xavidop/diamond/compare/v1.0.3...v1.1.0) (2026-06-25)
 
 
