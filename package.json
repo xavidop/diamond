@@ -1,8 +1,8 @@
 {
-  "name": "baseball-release",
+  "name": "diamond-release",
   "version": "0.0.0",
   "private": true,
-  "description": "Release tooling (semantic-release) for the baseball monorepo",
+  "description": "Release tooling (semantic-release) for the diamond monorepo",
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
