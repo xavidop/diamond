@@ -33,7 +33,7 @@ function Ext({ href, children }: { href: string; children: React.ReactNode }) {
 
 export default function AboutPage() {
   return (
-    <div className="max-w-3xl">
+    <div>
       <SectionTitle title="About" subtitle="What Diamond is — and isn't" />
 
       {/* Dedication */}
@@ -67,7 +67,7 @@ export default function AboutPage() {
       {/* Legal */}
       <Card>
         <h2 className="page-eyebrow mb-3">Disclaimer</h2>
-        <div className="space-y-4 text-sm leading-relaxed text-pitch-300">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-x-10 text-sm leading-relaxed text-pitch-300">
           <p>
             Diamond is an independent, non-commercial project made for
             educational and informational purposes.
