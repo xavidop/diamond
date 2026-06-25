@@ -14,6 +14,7 @@ import { useSport } from "../contexts/SportContext";
 import { useFavorites } from "../contexts/FavoritesContext";
 import { usePins } from "../contexts/PinsContext";
 import ProbablePitchers from "../components/ui/ProbablePitchers";
+import NotifyButton from "../components/ui/NotifyButton";
 
 type MlbGame = {
   gamePk: number;
@@ -254,16 +255,22 @@ function GameCard({ game }: { game: MlbGame }) {
         <span className="font-display font-bold text-[9px] tracking-[0.12em] uppercase text-white/20 truncate mr-2">
           {game.venue?.name ?? ""}
         </span>
-        {isLive ? (
-          <span className="live-badge shrink-0">
-            <span className="w-[5px] h-[5px] rounded-full bg-volt-500 animate-pulse shrink-0" />
-            {game.linescore?.currentInningOrdinal ?? "Live"}
-          </span>
-        ) : (
-          <span className="font-display font-bold text-[9px] tracking-wider uppercase text-white/20 shrink-0">
-            {detail}
-          </span>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          {isLive ? (
+            <span className="live-badge">
+              <span className="w-[5px] h-[5px] rounded-full bg-volt-500 animate-pulse shrink-0" />
+              {game.linescore?.currentInningOrdinal ?? "Live"}
+            </span>
+          ) : (
+            <span className="font-display font-bold text-[9px] tracking-wider uppercase text-white/20">
+              {detail}
+            </span>
+          )}
+          <NotifyButton
+            gamePk={game.gamePk}
+            label={`${away?.team?.name ?? "Away"} @ ${home?.team?.name ?? "Home"}`}
+          />
+        </div>
       </div>
 
       {(["away", "home"] as const).map((side) => {
