@@ -13,6 +13,7 @@ const {
 } = Astro.props;
 const site = Astro.site?.href ?? 'https://diamond.xavidop.me/';
 const ogImage = new URL('screenshots/web-home.png', site).href;
+const canonical = new URL(Astro.url.pathname, site).href;
 const gaId = import.meta.env.PUBLIC_GA_ID?.trim();
 ---
 
@@ -23,6 +24,7 @@ const gaId = import.meta.env.PUBLIC_GA_ID?.trim();
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="theme-color" content="#08090d" />
 
