@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/xavidop/diamond/compare/v1.4.0...v1.4.1) (2026-06-26)
+
+
+### Bug Fixes
+
+* added landing GA ([75d305e](https://github.com/xavidop/diamond/commit/75d305e6f211f6a5524c6c78fdfdb7e21428e8c7))
+
 # [1.4.0](https://github.com/xavidop/diamond/compare/v1.3.3...v1.4.0) (2026-06-26)
 
 
