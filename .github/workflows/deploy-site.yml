@@ -43,7 +43,7 @@ jobs:
 
       - name: Build with Astro
         env:
-          PUBLIC_GA_ID: ${{ vars.GA_MEASUREMENT_ID }}
+          PUBLIC_GA_ID: ${{ vars.GA_MEASUREMENT_ID_LANDING }}
         run: npm run build
 
       - name: Upload Pages artifact
