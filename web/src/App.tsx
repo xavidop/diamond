@@ -8,6 +8,8 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { PinsProvider } from "./contexts/PinsContext";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
 import { ToastProvider } from "./contexts/ToastContext";
+import CookieConsent from "./components/CookieConsent";
+import { usePageTracking } from "./hooks/usePageTracking";
 
 const TodayPage = lazy(() => import("./pages/TodayPage"));
 const ScoreboardPage = lazy(() => import("./pages/ScoreboardPage"));
@@ -44,6 +46,41 @@ const queryClient = new QueryClient({
   },
 });
 
+function RoutedApp() {
+  usePageTracking();
+  return (
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route index element={<TodayPage />} />
+        <Route path="scoreboard" element={<ScoreboardPage />} />
+        <Route path="standings" element={<StandingsPage />} />
+        <Route path="teams" element={<TeamsPage />} />
+        <Route path="teams/:teamId" element={<TeamPage />} />
+        <Route path="players/:personId" element={<PlayerPage />} />
+        <Route path="game/:gamePk" element={<GamePage />} />
+        <Route path="leaders" element={<LeadersPage />} />
+        <Route path="streaks" element={<StreaksPage />} />
+        <Route path="compare" element={<ComparePage />} />
+        <Route path="team-compare" element={<TeamComparePage />} />
+        <Route path="postseason" element={<PostseasonPage />} />
+        <Route path="history" element={<HistoryPage />} />
+        <Route path="draft" element={<DraftPage />} />
+        <Route path="awards" element={<AwardsPage />} />
+        <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="venues" element={<VenuesPage />} />
+        <Route path="venues/:venueId" element={<VenuePage />} />
+        <Route path="favorites" element={<FavoritesPage />} />
+        <Route path="glossary" element={<GlossaryPage />} />
+        <Route path="explorer" element={<ExplorerPage />} />
+        <Route path="search" element={<SearchPage />} />
+        <Route path="diamondgpt" element={<DiamondGptPage />} />
+        <Route path="about" element={<AboutPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  );
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -53,42 +90,15 @@ export default function App() {
             <ToastProvider>
               <NotificationsProvider>
                 <SportProvider>
-              <BrowserRouter>
-                <Routes>
-                  <Route element={<AppLayout />}>
-                    <Route index element={<TodayPage />} />
-                    <Route path="scoreboard" element={<ScoreboardPage />} />
-                    <Route path="standings" element={<StandingsPage />} />
-                    <Route path="teams" element={<TeamsPage />} />
-                    <Route path="teams/:teamId" element={<TeamPage />} />
-                    <Route path="players/:personId" element={<PlayerPage />} />
-                    <Route path="game/:gamePk" element={<GamePage />} />
-                    <Route path="leaders" element={<LeadersPage />} />
-                    <Route path="streaks" element={<StreaksPage />} />
-                    <Route path="compare" element={<ComparePage />} />
-                    <Route path="team-compare" element={<TeamComparePage />} />
-                    <Route path="postseason" element={<PostseasonPage />} />
-                    <Route path="history" element={<HistoryPage />} />
-                    <Route path="draft" element={<DraftPage />} />
-                    <Route path="awards" element={<AwardsPage />} />
-                    <Route path="transactions" element={<TransactionsPage />} />
-                    <Route path="venues" element={<VenuesPage />} />
-                    <Route path="venues/:venueId" element={<VenuePage />} />
-                    <Route path="favorites" element={<FavoritesPage />} />
-                    <Route path="glossary" element={<GlossaryPage />} />
-                    <Route path="explorer" element={<ExplorerPage />} />
-                    <Route path="search" element={<SearchPage />} />
-                    <Route path="diamondgpt" element={<DiamondGptPage />} />
-                    <Route path="about" element={<AboutPage />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Route>
-                </Routes>
-              </BrowserRouter>
+                  <BrowserRouter>
+                    <RoutedApp />
+                  </BrowserRouter>
                 </SportProvider>
               </NotificationsProvider>
             </ToastProvider>
           </PinsProvider>
         </FavoritesProvider>
+        <CookieConsent />
       </ThemeProvider>
     </QueryClientProvider>
   );

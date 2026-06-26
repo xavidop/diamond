@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import CookieConsent from '../components/CookieConsent.astro';
 
 interface Props {
   title?: string;
@@ -12,6 +13,7 @@ const {
 } = Astro.props;
 const site = Astro.site?.href ?? 'https://diamond.xavidop.me/';
 const ogImage = new URL('screenshots/web-home.png', site).href;
+const gaId = import.meta.env.PUBLIC_GA_ID?.trim();
 ---
 
 <!doctype html>
@@ -33,8 +35,28 @@ const ogImage = new URL('screenshots/web-home.png', site).href;
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
+    {gaId && (
+      <Fragment>
+        <script is:inline define:vars={{ gaId }}>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){ dataLayer.push(arguments); }
+          gtag('consent', 'default', {
+            ad_storage: 'denied',
+            analytics_storage: 'denied',
+            ad_user_data: 'denied',
+            ad_personalization: 'denied',
+          });
+          gtag('js', new Date());
+          // Suppress the automatic page_view; the consent banner sends a
+          // consent-gated page_view only once analytics_storage is granted.
+          gtag('config', gaId, { send_page_view: false });
+        </script>
+        <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
+      </Fragment>
+    )}
   </head>
   <body>
     <slot />
+    <CookieConsent />
   </body>
 </html>

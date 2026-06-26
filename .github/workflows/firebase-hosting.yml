@@ -36,6 +36,8 @@ jobs:
 
       - name: Install & build
         working-directory: web
+        env:
+          VITE_GA_ID: ${{ vars.GA_MEASUREMENT_ID }}
         run: |
           npm ci
           npm run build

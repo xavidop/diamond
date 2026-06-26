@@ -1,0 +1,119 @@
+---
+// site/src/components/CookieConsent.astro
+// Self-contained cookie banner. The inline script also bootstraps gtag consent
+// updates. Always rendered (matches the web app); when no GA id is configured
+// the consent calls just queue into dataLayer with no library to drain them.
+---
+<div id="cookie-consent" role="dialog" aria-label="Cookie consent" aria-modal="true" hidden>
+  <p>
+    Diamond uses cookies for anonymous analytics.
+    <a href="https://github.com/xavidop/diamond" rel="noopener">Learn more</a>.
+  </p>
+  <div class="cc-actions">
+    <button id="cc-reject" type="button">Reject</button>
+    <button id="cc-accept" type="button">Accept</button>
+  </div>
+</div>
+
+<style>
+  #cookie-consent {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    z-index: 1000;
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    background: var(--ink-2, #0d0f15);
+    border: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    color: var(--text, #f3f4f2);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+  /* The id selector's display:flex would otherwise beat the UA [hidden] rule,
+     leaving the banner visible after a choice — force it hidden. */
+  #cookie-consent[hidden] {
+    display: none;
+  }
+  #cookie-consent p {
+    margin: 0;
+    flex: 1 1 280px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  #cookie-consent a { color: var(--muted, #9aa0a6); }
+  .cc-actions { display: flex; gap: 10px; }
+  .cc-actions button {
+    cursor: pointer;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 8px;
+  }
+  #cc-reject {
+    background: transparent;
+    border: 1px solid var(--line, rgba(255, 255, 255, 0.25));
+    color: var(--text, #f3f4f2);
+  }
+  #cc-accept {
+    background: var(--grass, #c6f64f);
+    border: 1px solid var(--grass, #c6f64f);
+    color: var(--ink, #08090d);
+  }
+</style>
+
+<script>
+  const KEY = 'diamond_cookie_consent';
+  const banner = document.getElementById('cookie-consent');
+  const gtag = (...args: unknown[]) => {
+    (window as any).dataLayer = (window as any).dataLayer || [];
+    (window as any).dataLayer.push(args);
+  };
+  const granted = {
+    ad_storage: 'granted',
+    analytics_storage: 'granted',
+    ad_user_data: 'granted',
+    ad_personalization: 'granted',
+  };
+
+  function stored() {
+    const v = localStorage.getItem(KEY);
+    return v === 'granted' || v === 'denied' ? v : null;
+  }
+
+  // The automatic page_view is suppressed in Layout (send_page_view: false);
+  // send one explicitly only after consent is granted.
+  function trackPageView() {
+    gtag('event', 'page_view', {
+      page_path: location.pathname + location.search,
+    });
+  }
+
+  // Replay a prior choice; otherwise show the banner.
+  const prev = stored();
+  if (prev === 'granted') {
+    gtag('consent', 'update', granted);
+    trackPageView();
+  } else if (prev === null && banner) {
+    banner.hidden = false;
+    document.getElementById('cc-reject')?.focus();
+  }
+
+  document.getElementById('cc-accept')?.addEventListener('click', () => {
+    localStorage.setItem(KEY, 'granted');
+    gtag('consent', 'update', granted);
+    trackPageView();
+    if (banner) banner.hidden = true;
+  });
+  document.getElementById('cc-reject')?.addEventListener('click', () => {
+    localStorage.setItem(KEY, 'denied');
+    if (banner) banner.hidden = true;
+  });
+</script>
