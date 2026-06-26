@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/xavidop/diamond/compare/v1.3.3...v1.4.0) (2026-06-26)
+
+
+### Features
+
+* add GA4 analytics + cookie consent to web and site ([2f0f97c](https://github.com/xavidop/diamond/commit/2f0f97cd5686e61fb101315e41178a6a403b829a))
+
 ## [1.3.3](https://github.com/xavidop/diamond/compare/v1.3.2...v1.3.3) (2026-06-26)
 
 
