@@ -284,7 +284,7 @@ func (m DiamondGPTModel) viewKey(hdr string) string {
 	b.WriteString("  " + StyleHeader.Render(m.provider.Label) +
 		StyleDim.Render("  needs "+m.provider.EnvVar) + "\n\n")
 	b.WriteString("  " + m.keyInput.View() + "\n\n")
-	b.WriteString("  " + StyleDim.Render("Used only for this session (exported to "+m.provider.EnvVar+")."))
+	b.WriteString("  " + StyleDim.Render("Disclaimer: your key is never stored on the server and is not used for any other purpose — only for this session (exported to "+m.provider.EnvVar+")."))
 	if m.connecting {
 		b.WriteString("\n\n" + loadingView("connecting…"))
 	}
@@ -325,6 +325,9 @@ func (m DiamondGPTModel) chatLines() []string {
 			sb.WriteString(StyleDim.Render("  "+m.provider.Label+" runs without live-data tools (Genkit limitation),") + "\n")
 			sb.WriteString(StyleDim.Render("  so I answer from baseball knowledge. For live data, pick Gemini or OpenAI.") + "\n")
 		}
+		sb.WriteString("\n")
+		sb.WriteString(StyleDim.Render("  Disclaimer: your API key is never stored on the server and is not used for") + "\n")
+		sb.WriteString(StyleDim.Render("  any other purpose — only to make your DiamondGPT requests.") + "\n")
 	}
 	for _, t := range m.turns {
 		if t.user {

@@ -92,14 +92,19 @@ export default function DiamondGptPage() {
               className="mt-1 w-full rounded-lg bg-pitch-950 border border-white/10 px-3 py-2 text-sm text-white"
             />
           </label>
-          <p className="text-white/25 text-[11px]">The key is sent only to this app's backend and never stored server-side.</p>
+          <p className="text-white/25 text-[11px]">Disclaimer: your API key is never stored on the server and is not used for any other purpose — it is used only to make this Diamond GPT request on your behalf.</p>
         </div>
       )}
 
       <div className="flex-1 overflow-y-auto rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
         {messages.length === 0 && (
-          <div className="text-white/30 text-sm text-center py-12">
-            Ask about scores, standings, players, or stats — DiamondGPT pulls live MLB data.
+          <div className="text-center py-12">
+            <div className="text-white/30 text-sm">
+              Ask about scores, standings, players, or stats — DiamondGPT pulls live MLB data.
+            </div>
+            <div className="text-white/20 text-[11px] mt-3 max-w-md mx-auto">
+              Disclaimer: your API key is never stored on the server and is not used for any other purpose — only to make your DiamondGPT requests.
+            </div>
           </div>
         )}
         {messages.map((m, i) => (
