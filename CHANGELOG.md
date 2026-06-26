@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/xavidop/diamond/compare/v1.4.1...v1.5.0) (2026-06-26)
+
+
+### Features
+
+* **site:** Google Search Console verification + SEO discoverability ([fa835df](https://github.com/xavidop/diamond/commit/fa835df0787c2effdbb1b551b0b5342e3563db1b))
+
 ## [1.4.1](https://github.com/xavidop/diamond/compare/v1.4.0...v1.4.1) (2026-06-26)
 
 
