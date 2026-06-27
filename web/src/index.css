@@ -181,6 +181,18 @@
   html.light .table-base tbody tr:hover { @apply bg-black/[0.025]; }
   html.light .nav-item { @apply text-pitch-700 hover:text-pitch-900 hover:bg-black/[0.06]; }
   html.light .nav-item-active { @apply text-[#5a6800] bg-[#5a6800]/10; }
+
+  /* DiamondGPT assistant bubble: prose-invert assumes a dark surface, so in
+     light mode its body/heading/strong/link/code colors stay light and wash
+     out on the cream bubble. Flip them to dark; !important beats the
+     prose-* utility classes on the element. */
+  html.light .diamond-app-root main .dgpt-bubble,
+  html.light .diamond-app-root main .dgpt-bubble :is(p, li, td, th, h1, h2, h3, h4, blockquote) {
+    color: #1f1f2e !important;
+  }
+  html.light .diamond-app-root main .dgpt-bubble :is(strong, h1, h2, h3, h4) { color: #13131e !important; }
+  html.light .diamond-app-root main .dgpt-bubble :is(a, code) { color: #5a6800 !important; }
+  html.light .diamond-app-root main .dgpt-bubble :is(hr, th, td) { border-color: rgba(0, 0, 0, 0.12) !important; }
 }
 
 /* Scrollbars (WebKit) */

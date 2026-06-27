@@ -12,9 +12,9 @@ export async function fetchProviders(): Promise<ProviderInfo[]> {
 export async function sendChat(args: {
   provider: string;
   apiKey?: string;
-  history: ChatMessage[];
+  sessionId?: string;
   message: string;
-}): Promise<string> {
+}): Promise<{ reply: string; sessionId?: string }> {
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -22,5 +22,5 @@ export async function sendChat(args: {
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((body as { error?: string }).error || `chat ${res.status}`);
-  return (body as { reply: string }).reply;
+  return body as { reply: string; sessionId?: string };
 }

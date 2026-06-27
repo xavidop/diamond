@@ -1,10 +1,10 @@
-import { genkit } from 'genkit';
+import { genkit } from 'genkit/beta';
+import { InMemorySessionStore } from 'genkit/beta';
+import { createHash } from 'node:crypto';
 import { googleAI } from '@genkit-ai/google-genai';
 import { openAI } from '@genkit-ai/compat-oai/openai';
 import { anthropic } from '@genkit-ai/anthropic';
 import { defineTools } from './tools.ts';
-
-export type ChatMessage = { role: 'user' | 'model'; text: string };
 
 export const PROVIDERS = [
   { id: 'gemini', label: 'Google Gemini', envVar: 'GEMINI_API_KEY', model: 'gemini-flash-latest' },
@@ -32,39 +32,63 @@ function systemPrompt(): string {
   );
 }
 
-// Build a Genkit instance for the chosen provider, keyed with `apiKey`.
-function initGenkit(providerId: string, apiKey: string) {
+// One agent per (provider, key). Defined once and reused across requests so
+// the agent's InMemorySessionStore retains conversations between turns.
+type AgentEntry = ReturnType<typeof buildAgent>;
+const agents = new Map<string, AgentEntry>();
+const MAX_AGENTS = 50;
+
+function buildAgent(providerId: string, key: string) {
+  let ai;
   switch (providerId) {
     case 'gemini':
-      return genkit({ plugins: [googleAI({ apiKey })], model: googleAI.model('gemini-flash-latest') });
+      ai = genkit({ plugins: [googleAI({ apiKey: key })], model: googleAI.model('gemini-flash-latest') });
+      break;
     case 'openai':
-      return genkit({ plugins: [openAI({ apiKey })], model: openAI.model('gpt-4.1-mini') });
+      ai = genkit({ plugins: [openAI({ apiKey: key })], model: openAI.model('gpt-4.1-mini') });
+      break;
     case 'anthropic':
-      return genkit({ plugins: [anthropic({ apiKey })], model: anthropic.model('claude-sonnet-4-6') });
+      ai = genkit({ plugins: [anthropic({ apiKey: key })], model: anthropic.model('claude-sonnet-4-6') });
+      break;
     default:
       throw new Error(`unknown provider "${providerId}"`);
   }
-}
-
-export async function ask(
-  providerId: string,
-  apiKey: string,
-  history: ChatMessage[],
-  message: string
-): Promise<string> {
-  const ai = initGenkit(providerId, apiKey);
-  const tools = defineTools(ai);
-  const messages = history.map((m) => ({ role: m.role, content: [{ text: m.text }] }));
-  // Anthropic's API requires max_tokens on every request.
   const config = providerId === 'anthropic' ? { maxOutputTokens: 8192 } : undefined;
-
-  const resp = await ai.generate({
+  return ai.defineAgent({
+    name: 'diamondgpt',
+    description: 'MLB-aware baseball assistant with live MLB Stats API tools.',
     system: systemPrompt(),
-    messages,
-    prompt: message,
-    tools,
+    tools: defineTools(ai),
     maxTurns: 6,
+    store: new InMemorySessionStore(),
     ...(config ? { config } : {}),
   });
-  return resp.text;
+}
+
+function getAgent(providerId: string, key: string) {
+  const id = `${providerId}:${createHash('sha256').update(key).digest('hex').slice(0, 16)}`;
+  let agent = agents.get(id);
+  if (!agent) {
+    agent = buildAgent(providerId, key);
+    if (agents.size >= MAX_AGENTS) {
+      const oldest = agents.keys().next().value;
+      if (oldest) agents.delete(oldest);
+    }
+    agents.set(id, agent);
+  }
+  return agent;
+}
+
+export async function chat(
+  providerId: string,
+  key: string,
+  sessionId: string | undefined,
+  message: string,
+): Promise<{ reply: string; sessionId?: string }> {
+  const agent = getAgent(providerId, key);
+  const conv = sessionId
+    ? await agent.loadChat({ sessionId }).catch(() => agent.chat())
+    : agent.chat();
+  const resp = await conv.send(message);
+  return { reply: resp.text, sessionId: resp.sessionId };
 }

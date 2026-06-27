@@ -1,7 +1,7 @@
 import express from 'express';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { PROVIDERS, resolveKey, ask, type ChatMessage } from './diamondgpt.ts';
+import { PROVIDERS, resolveKey, chat } from './diamondgpt.ts';
 
 export function createApp() {
   const app = express();
@@ -19,8 +19,8 @@ export function createApp() {
   });
 
   app.post('/api/chat', async (req, res) => {
-    const { provider, apiKey, history, message } = (req.body ?? {}) as {
-      provider?: string; apiKey?: string; history?: ChatMessage[]; message?: string;
+    const { provider, apiKey, sessionId, message } = (req.body ?? {}) as {
+      provider?: string; apiKey?: string; sessionId?: string; message?: string;
     };
     if (!provider || !PROVIDERS.some((p) => p.id === provider)) {
       return res.status(400).json({ error: 'unknown or missing provider' });
@@ -33,8 +33,8 @@ export function createApp() {
       return res.status(400).json({ error: `No API key for ${provider}. Enter a key or set the server env var.` });
     }
     try {
-      const reply = await ask(provider, key, Array.isArray(history) ? history : [], message);
-      res.json({ reply });
+      const result = await chat(provider, key, sessionId, message);
+      res.json(result);
     } catch (err) {
       res.status(502).json({ error: err instanceof Error ? err.message : String(err) });
     }

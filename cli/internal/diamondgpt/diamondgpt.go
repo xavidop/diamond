@@ -13,7 +13,10 @@ import (
 	"time"
 
 	"github.com/firebase/genkit/go/ai"
+	aix "github.com/firebase/genkit/go/ai/exp"
+	"github.com/firebase/genkit/go/ai/exp/localstore"
 	"github.com/firebase/genkit/go/genkit"
+	exp "github.com/firebase/genkit/go/genkit/exp"
 	"github.com/firebase/genkit/go/plugins/anthropic"
 	"github.com/firebase/genkit/go/plugins/compat_oai/openai"
 	"github.com/firebase/genkit/go/plugins/googlegenai"
@@ -46,12 +49,15 @@ var Providers = []Provider{
 // HasKey reports whether the provider's API key is present in the environment.
 func (p Provider) HasKey() bool { return os.Getenv(p.EnvVar) != "" }
 
-// Client is a configured Genkit assistant with MLB tools and chat history.
+// Client is a configured Genkit assistant with MLB tools and an agent-managed
+// conversation. Conversation history is owned by the agent's in-memory session
+// store; we only track the session ID to resume across turns.
 type Client struct {
 	g         *genkit.Genkit
 	provider  Provider
 	tools     []ai.ToolRef
-	history   []*ai.Message
+	agent     *aix.Agent[any]
+	sessionID string
 	genConfig any // provider-specific generation config (e.g. Anthropic max_tokens)
 }
 
@@ -75,17 +81,20 @@ func New(ctx context.Context, p Provider, apiKey string) (cl *Client, err error)
 	case "gemini":
 		g = genkit.Init(ctx,
 			genkit.WithPlugins(&googlegenai.GoogleAI{APIKey: apiKey}),
-			genkit.WithDefaultModel(p.Model))
+			genkit.WithDefaultModel(p.Model),
+			genkit.WithExperimental())
 	case "openai":
 		g = genkit.Init(ctx,
 			genkit.WithPlugins(&openai.OpenAI{APIKey: apiKey}),
-			genkit.WithDefaultModel(p.Model))
+			genkit.WithDefaultModel(p.Model),
+			genkit.WithExperimental())
 	case "anthropic":
 		// Native Anthropic plugin: supports tool calling and lists models
 		// dynamically. Reads ANTHROPIC_API_KEY when APIKey is empty.
 		g = genkit.Init(ctx,
 			genkit.WithPlugins(&anthropic.Anthropic{APIKey: apiKey}),
-			genkit.WithDefaultModel(p.Model))
+			genkit.WithDefaultModel(p.Model),
+			genkit.WithExperimental())
 
 	default:
 		return nil, fmt.Errorf("unknown provider %q", p.ID)
@@ -106,6 +115,20 @@ func New(ctx context.Context, p Provider, apiKey string) (cl *Client, err error)
 	if p.Tools {
 		c.tools = defineTools(g, mlb.DefaultClient(), toolOpts...)
 	}
+
+	promptOpts := aix.InlinePrompt{
+		ai.WithSystem(systemPrompt(p.Tools)),
+		ai.WithMaxTurns(6),
+	}
+	if p.Tools {
+		promptOpts = append(promptOpts, ai.WithTools(c.tools...))
+	}
+	if c.genConfig != nil {
+		promptOpts = append(promptOpts, ai.WithConfig(c.genConfig))
+	}
+	c.agent = exp.DefineAgent[any](g, "diamondgpt", promptOpts,
+		aix.WithSessionStore(localstore.NewInMemorySessionStore[any]()))
+
 	return c, nil
 }
 
@@ -127,7 +150,7 @@ func systemPrompt(tools bool) string {
 		"Keep answers short and terminal-friendly."
 }
 
-// Ask sends a user message (with full history, and tools when supported).
+// Ask sends a user message to the agent and returns the reply.
 func (c *Client) Ask(ctx context.Context, userMsg string) (reply string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -135,30 +158,23 @@ func (c *Client) Ask(ctx context.Context, userMsg string) (reply string, err err
 		}
 	}()
 
-	withTools := c.ToolsEnabled()
-	opts := []ai.GenerateOption{
-		ai.WithSystem(systemPrompt(withTools)),
-		ai.WithMessages(c.history...),
-		ai.WithPrompt(userMsg),
+	var opts []aix.InvocationOption[any]
+	if c.sessionID != "" {
+		opts = append(opts, aix.WithSessionID[any](c.sessionID))
 	}
-	if c.genConfig != nil {
-		opts = append(opts, ai.WithConfig(c.genConfig))
-	}
-	if withTools {
-		opts = append(opts, ai.WithTools(c.tools...), ai.WithMaxTurns(6))
-	}
-
-	resp, err := genkit.Generate(ctx, c.g, opts...)
+	out, err := c.agent.RunText(ctx, userMsg, opts...)
 	if err != nil {
 		return "", err
 	}
-
-	// Persist history without the system message (re-added each turn).
-	c.history = c.history[:0]
-	for _, m := range resp.History() {
-		if m.Role != ai.RoleSystem {
-			c.history = append(c.history, m)
+	if out.FinishReason == aix.AgentFinishReasonFailed {
+		if out.Error != nil {
+			return "", out.Error
 		}
+		return "", fmt.Errorf("agent turn failed")
 	}
-	return resp.Text(), nil
+	c.sessionID = out.SessionID
+	if out.Message == nil {
+		return "", nil
+	}
+	return out.Message.Text(), nil
 }

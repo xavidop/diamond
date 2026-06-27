@@ -15,6 +15,7 @@ export default function DiamondGptPage() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(KEY_LS) || '');
   const [showSettings, setShowSettings] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +24,7 @@ export default function DiamondGptPage() {
   useEffect(() => { fetchProviders().then(setProviders).catch(() => {}); }, []);
   useEffect(() => { localStorage.setItem(PROVIDER_LS, provider); }, [provider]);
   useEffect(() => { localStorage.setItem(KEY_LS, apiKey); }, [apiKey]);
+  useEffect(() => { setSessionId(undefined); setMessages([]); }, [provider, apiKey]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, busy]);
 
   const current = providers.find((p) => p.id === provider);
@@ -32,12 +34,14 @@ export default function DiamondGptPage() {
     const text = input.trim();
     if (!text || busy) return;
     setError(null);
-    const history = messages;
-    setMessages([...history, { role: 'user', text }]);
+    setMessages((m) => [...m, { role: 'user', text }]);
     setInput('');
     setBusy(true);
     try {
-      const reply = await sendChat({ provider, apiKey: apiKey || undefined, history, message: text });
+      const { reply, sessionId: sid } = await sendChat({
+        provider, apiKey: apiKey || undefined, sessionId, message: text,
+      });
+      if (sid) setSessionId(sid);
       setMessages((m) => [...m, { role: 'model', text: reply }]);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -114,7 +118,7 @@ export default function DiamondGptPage() {
                 {m.text}
               </div>
             ) : (
-              <div className="inline-block max-w-[85%] rounded-2xl px-4 py-3 text-sm bg-white/[0.06] text-left
+              <div className="dgpt-bubble inline-block max-w-[85%] rounded-2xl px-4 py-3 text-sm bg-pitch-700 text-left
                 prose prose-sm prose-invert max-w-none
                 prose-p:my-2 prose-headings:mt-3 prose-headings:mb-1.5 prose-headings:font-display prose-headings:uppercase prose-headings:tracking-wide
                 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5
@@ -138,7 +142,7 @@ export default function DiamondGptPage() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') onSend(); }}
           placeholder="Ask DiamondGPT…"
-          className="flex-1 rounded-xl bg-white/[0.04] border border-white/10 px-4 py-3 text-sm text-white placeholder:text-white/25"
+          className="input flex-1 rounded-xl px-4 py-3 text-sm"
         />
         <button onClick={onSend} disabled={busy} className="btn p-3 disabled:opacity-40" title="Send">
           <Send size={16} />
