@@ -276,7 +276,15 @@ func (m StandingsModel) divBlock(rec mlb.StandingsRecord, baseIdx, colW int) ([]
 		case i == 0:
 			marker, ns = StyleAccent.Render("★ "), StyleAccent.Bold(true)
 		}
-		nm := ns.Render(fmt.Sprintf("%-*s", nameW, truncate(tr.Team.Name, nameW)))
+		// Micro glyph: 1 visible col + 1 space = 2 display cols.
+		// Pad team name to (nameW-2) so that glyph+space+name = nameW total visible cols.
+		// When no glyph, pad to nameW as before.
+		var nm string
+		if dot := teamDot(tr.Team.ID); dot != "" {
+			nm = dot + " " + ns.Render(fmt.Sprintf("%-*s", nameW-2, truncate(tr.Team.Name, nameW-2)))
+		} else {
+			nm = ns.Render(fmt.Sprintf("%-*s", nameW, truncate(tr.Team.Name, nameW)))
+		}
 		stats := StyleItemNormal.Render(fmt.Sprintf("%3d-%-3d %5s %5s", tr.Wins, tr.Losses, tr.WinningPercentage, gbDash(tr.GamesBack)))
 		lines = append(lines, marker+nm+" "+stats)
 	}
@@ -312,7 +320,15 @@ func (m StandingsModel) wcBlock(rec mlb.StandingsRecord, baseIdx, colW int) ([]s
 		case inWildCard(tr.WildCardGamesBack):
 			ns = StyleAccent
 		}
-		nm := ns.Render(fmt.Sprintf("%-*s", nameW, truncate(tr.Team.Name, nameW)))
+		// Micro glyph: 1 visible col + 1 space = 2 display cols.
+		// Pad team name to (nameW-2) so that glyph+space+name = nameW total visible cols.
+		// When no glyph, pad to nameW as before.
+		var nm string
+		if dot := teamDot(tr.Team.ID); dot != "" {
+			nm = dot + " " + ns.Render(fmt.Sprintf("%-*s", nameW-2, truncate(tr.Team.Name, nameW-2)))
+		} else {
+			nm = ns.Render(fmt.Sprintf("%-*s", nameW, truncate(tr.Team.Name, nameW)))
+		}
 		stats := StyleItemNormal.Render(fmt.Sprintf("%3d-%-3d %5s %5s", tr.Wins, tr.Losses, tr.WinningPercentage, gbDash(tr.WildCardGamesBack)))
 		lines = append(lines, marker+nm+" "+stats)
 	}

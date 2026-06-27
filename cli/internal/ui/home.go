@@ -149,16 +149,16 @@ func (m HomeModel) View() string {
 	if len(ordered) == 0 {
 		sb.WriteString(StyleDim.Render("  No games scheduled today.") + "\n")
 	} else {
-		lines := make([]string, 0, len(ordered))
+		blocks := make([]string, 0, len(ordered))
 		for _, g := range ordered {
-			lines = append(lines, "  "+formatTodayGame(g))
+			blocks = append(blocks, renderHomeGameBlock(g))
 		}
-		if m.width >= 80 && len(lines) > 8 {
-			half := (len(lines) + 1) / 2
-			left := lipgloss.NewStyle().Width(m.width/2 - 2).Render(strings.Join(lines[:half], "\n"))
-			sb.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, left, strings.Join(lines[half:], "\n")) + "\n")
+		if m.width >= 80 && len(blocks) > 8 {
+			half := (len(blocks) + 1) / 2
+			left := lipgloss.NewStyle().Width(m.width/2 - 2).Render(strings.Join(blocks[:half], "\n"))
+			sb.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, left, strings.Join(blocks[half:], "\n")) + "\n")
 		} else {
-			sb.WriteString(strings.Join(lines, "\n") + "\n")
+			sb.WriteString(strings.Join(blocks, "\n") + "\n")
 		}
 	}
 
@@ -180,4 +180,27 @@ func (m HomeModel) View() string {
 	sb.WriteString("\n\n" + credit)
 
 	return sb.String() + "\n\n" + HelpBar("Enter scores", "r refresh", "esc menu")
+}
+
+// renderHomeGameBlock renders one game entry for the home dashboard as a single
+// compact line: each team shown as a colored "● ABBR" tag in its own colors,
+// with the score (or start time) between them. Single-line blocks keep the
+// two-column grid perfectly aligned.
+func renderHomeGameBlock(g mlb.Game) string {
+	awayID := g.Teams.Away.Team.ID
+	homeID := g.Teams.Home.Team.ID
+	away := teamTag(awayID, fmt.Sprintf("%-3s", teamAbbr(g.Teams.Away)))
+	home := teamTag(homeID, fmt.Sprintf("%-3s", teamAbbr(g.Teams.Home)))
+
+	switch g.Status.AbstractGameState {
+	case "Live":
+		score := StyleHeader.Render(fmt.Sprintf(" %2d-%-2d ", g.Teams.Away.Score, g.Teams.Home.Score))
+		return "  " + away + score + home + "  " +
+			pulseDot() + StyleLiveBadge.Render(g.Linescore.CurrentInningOrdinal)
+	case "Final":
+		score := StyleHeader.Render(fmt.Sprintf(" %2d-%-2d ", g.Teams.Away.Score, g.Teams.Home.Score))
+		return "  " + away + score + home + "  " + StyleDim.Render("Final")
+	default:
+		return "  " + away + StyleDim.Render("  @  ") + home + "  " + StyleDim.Render(shortClock(g.GameDate))
+	}
 }

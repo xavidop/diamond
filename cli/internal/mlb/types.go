@@ -255,6 +255,7 @@ type BoxscoreTeam struct {
 	Pitchers []int                     `json:"pitchers"`
 	Batters  []int                     `json:"batters"`
 	Team     struct {
+		ID   int    `json:"id"`
 		Name string `json:"name"`
 	} `json:"team"`
 	TeamStats struct {

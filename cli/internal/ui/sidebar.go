@@ -170,11 +170,14 @@ func sidebarFooter(games []mlb.Game) string {
 // right-align the clock so every AM/PM lines up — a clean two-column read.
 func sidebarGameLine(g mlb.Game, live bool) string {
 	a, h := teamAbbr(g.Teams.Away), teamAbbr(g.Teams.Home)
+	awayID, homeID := g.Teams.Away.Team.ID, g.Teams.Home.Team.ID
 	if live {
-		return fmt.Sprintf("%-3s %d-%d %-3s", a, g.Teams.Away.Score, g.Teams.Home.Score, h)
+		return teamText(awayID, fmt.Sprintf("%-3s", a)) +
+			StyleItemNormal.Render(fmt.Sprintf(" %d-%d ", g.Teams.Away.Score, g.Teams.Home.Score)) +
+			teamText(homeID, fmt.Sprintf("%-3s", h))
 	}
-	return StyleItemNormal.Render(fmt.Sprintf("%3s", a)) +
+	return teamText(awayID, fmt.Sprintf("%3s", a)) +
 		StyleDim.Render("@") +
-		StyleItemNormal.Render(fmt.Sprintf("%-3s", h)) +
+		teamText(homeID, fmt.Sprintf("%-3s", h)) +
 		StyleDim.Render(fmt.Sprintf(" %7s", shortClock(g.GameDate)))
 }

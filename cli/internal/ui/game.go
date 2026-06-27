@@ -165,10 +165,9 @@ func (m GameModel) View() string {
 	col := 24
 	awayScore := StyleAccent.Bold(true).Render(fmt.Sprintf("%d", awayRuns))
 	homeScore := StyleAccent.Bold(true).Render(fmt.Sprintf("%d", homeRuns))
-	header := fmt.Sprintf("%-*s  %s     %s  %-*s",
-		col, StyleHeader.Render(truncate(awayName, col)),
-		awayScore, homeScore,
-		col, StyleHeader.Render(truncate(homeName, col)))
+	awayCell := teamHeadline(m.feed.GameData.Teams.Away.ID, fmt.Sprintf("%-*s", col, truncate(awayName, col)))
+	homeCell := teamHeadline(m.feed.GameData.Teams.Home.ID, fmt.Sprintf("%-*s", col, truncate(homeName, col)))
+	header := awayCell + "  " + awayScore + "     " + homeScore + "  " + homeCell
 	if stateStr != "" {
 		header += "\n" + stateStr
 	}
@@ -219,8 +218,9 @@ func (m GameModel) View() string {
 func (m GameModel) renderBoxscore() string {
 	bs := m.feed.LiveData.Boxscore
 	col := func(team mlb.BoxscoreTeam) string {
-		hdr := StyleHeader.Render(fmt.Sprintf("%-20s %3s %3s %3s %3s %3s %3s %4s",
-			truncate(team.Team.Name, 20), "AB", "R", "H", "RBI", "BB", "SO", "AVG"))
+		hdr := teamHeadline(team.Team.ID, fmt.Sprintf("%-20s", truncate(team.Team.Name, 20))) +
+			StyleHeader.Render(fmt.Sprintf(" %3s %3s %3s %3s %3s %3s %4s",
+				"AB", "R", "H", "RBI", "BB", "SO", "AVG"))
 		lines := hdr + "\n" + strings.Repeat("─", 52) + "\n"
 		for _, id := range team.Batters {
 			key := fmt.Sprintf("ID%d", id)
@@ -270,8 +270,9 @@ func (m GameModel) renderPlays() string {
 func (m GameModel) renderPitching() string {
 	bs := m.feed.LiveData.Boxscore
 	col := func(team mlb.BoxscoreTeam) string {
-		hdr := StyleHeader.Render(fmt.Sprintf("%-20s %5s %3s %3s %3s %3s %3s %3s",
-			truncate(team.Team.Name, 20), "IP", "H", "R", "ER", "BB", "K", "NP"))
+		hdr := teamHeadline(team.Team.ID, fmt.Sprintf("%-20s", truncate(team.Team.Name, 20))) +
+			StyleHeader.Render(fmt.Sprintf(" %5s %3s %3s %3s %3s %3s %3s",
+				"IP", "H", "R", "ER", "BB", "K", "NP"))
 		lines := hdr + "\n" + StyleDim.Render(strings.Repeat("─", 49)) + "\n"
 		for _, id := range team.Pitchers {
 			key := fmt.Sprintf("ID%d", id)
@@ -449,5 +450,3 @@ func truncate(s string, n int) string {
 	}
 	return string(runes[:n-1]) + "."
 }
-
-

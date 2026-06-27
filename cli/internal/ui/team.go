@@ -439,7 +439,9 @@ func (m TeamModel) View() string {
 	if fav.HasTeam(team.ID) {
 		star = StyleAccent.Render("★ ")
 	}
-	header := panelHdr + "\n" + star + gradientText(team.Name, ts, te) + "  " + StyleDim.Render(team.Division.Name)
+	titleLine := star + gradientText(team.Name, ts, te) + "  " + StyleDim.Render(team.Division.Name)
+	titleLine = lipgloss.JoinHorizontal(lipgloss.Center, teamBadge(*team), "  ", titleLine)
+	header := panelHdr + "\n" + titleLine
 
 	var body string
 	switch m.tab {

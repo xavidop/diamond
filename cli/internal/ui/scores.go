@@ -360,7 +360,7 @@ func (m ScoresModel) renderGameList() string {
 			} else if home.Score > away.Score {
 				hStr = StyleAccent.Bold(true).Render(hStr)
 			}
-			line1 = truncate(away.Team.Name, 18) + "  " + aStr + "  ─  " + hStr + "  " + truncate(home.Team.Name, 18)
+			line1 = teamText(away.Team.ID, truncate(away.Team.Name, 18)) + "  " + aStr + "  ─  " + hStr + "  " + teamText(home.Team.ID, truncate(home.Team.Name, 18))
 			line2 = pulseDot() + " " + StyleLiveBadge.Render(inning+" "+half)
 
 		case "Final":
@@ -371,11 +371,11 @@ func (m ScoresModel) renderGameList() string {
 			} else if home.Score > away.Score {
 				hStr = StyleAccent.Bold(true).Render(hStr)
 			}
-			line1 = truncate(away.Team.Name, 18) + "  " + aStr + "  ─  " + hStr + "  " + truncate(home.Team.Name, 18)
+			line1 = teamText(away.Team.ID, truncate(away.Team.Name, 18)) + "  " + aStr + "  ─  " + hStr + "  " + teamText(home.Team.ID, truncate(home.Team.Name, 18))
 			line2 = StyleMuted.Render("Final")
 
 		default:
-			line1 = truncate(away.Team.Name, 18) + "  vs  " + truncate(home.Team.Name, 18)
+			line1 = teamText(away.Team.ID, truncate(away.Team.Name, 18)) + "  vs  " + teamText(home.Team.ID, truncate(home.Team.Name, 18))
 			line2 = StyleDim.Render(formatGameTime(g.GameDate))
 		}
 
@@ -445,11 +445,17 @@ func (m ScoresModel) renderDetail(w int) string {
 		}
 		sb.WriteString(centerIn(statusStr, w) + "\n\n")
 
-		// Team names
-		nameStr := StyleHeader.Bold(true).Render(truncate(away.Team.Name, 22)) +
-			StyleDim.Render("  vs  ") +
-			StyleHeader.Bold(true).Render(truncate(home.Team.Name, 22))
-		sb.WriteString(centerIn(nameStr, w) + "\n\n")
+		// Team names in each team's colors, with a colored marker.
+		awayID := away.Team.ID
+		homeID := home.Team.ID
+		awayNameStr := teamDot(awayID) + " " + teamHeadline(awayID, truncate(away.Team.Name, 22))
+		homeNameStr := teamDot(homeID) + " " + teamHeadline(homeID, truncate(home.Team.Name, 22))
+		nameRow := lipgloss.JoinHorizontal(lipgloss.Center,
+			awayNameStr,
+			StyleDim.Render("  vs  "),
+			homeNameStr,
+		)
+		sb.WriteString(centerIn(nameRow, w) + "\n\n")
 
 		// Big score
 		gradStart, gradEnd := headerColors()
@@ -510,9 +516,13 @@ func (m ScoresModel) renderDetail(w int) string {
 
 	default: // Scheduled
 		sb.WriteString("\n")
-		sb.WriteString(centerIn(StyleHeader.Bold(true).Render(truncate(away.Team.Name, 26)), w) + "\n")
+		awaySchedID := away.Team.ID
+		homeSchedID := home.Team.ID
+		awaySchedLabel := teamDot(awaySchedID) + " " + teamHeadline(awaySchedID, truncate(away.Team.Name, 26))
+		homeSchedLabel := teamDot(homeSchedID) + " " + teamHeadline(homeSchedID, truncate(home.Team.Name, 26))
+		sb.WriteString(centerIn(awaySchedLabel, w) + "\n")
 		sb.WriteString(centerIn(StyleDim.Render("vs"), w) + "\n")
-		sb.WriteString(centerIn(StyleHeader.Bold(true).Render(truncate(home.Team.Name, 26)), w) + "\n\n")
+		sb.WriteString(centerIn(homeSchedLabel, w) + "\n\n")
 
 		sb.WriteString(centerIn(StyleAccent.Render(formatGameTime(g.GameDate)), w) + "\n")
 		if g.Venue.Name != "" {
