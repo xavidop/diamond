@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/xavidop/diamond/compare/v1.5.2...v1.6.0) (2026-06-27)
+
+
+### Features
+
+* **cli:** team colors throughout the UI ([37c5e81](https://github.com/xavidop/diamond/commit/37c5e81562452f05d7df617666aefceeeacfed17))
+
 ## [1.5.2](https://github.com/xavidop/diamond/compare/v1.5.1...v1.5.2) (2026-06-27)
 
 
