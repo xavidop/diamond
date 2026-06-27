@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/xavidop/diamond/compare/v1.5.0...v1.5.1) (2026-06-27)
+
+
+### Bug Fixes
+
+* switch to Genkit Agents ([81082d5](https://github.com/xavidop/diamond/commit/81082d54acba80abe5c28b0a7f7922f8b4bcd03b))
+
 # [1.5.0](https://github.com/xavidop/diamond/compare/v1.4.1...v1.5.0) (2026-06-26)
 
 
