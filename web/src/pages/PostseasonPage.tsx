@@ -211,7 +211,13 @@ function BracketGrid({
   const wrapW = wrapSize.w;
   const wrapH = wrapSize.h;
 
+  // The bracket needs ~220px per round plus the column gap; on a narrow screen
+  // that exceeds the viewport, so let it scroll horizontally instead of being
+  // clipped. minWidth keeps the full multi-column width on mobile while the
+  // 1fr tracks still stretch to fill wider screens.
+  const minBracketWidth = rounds.length * 220 + (rounds.length - 1) * 64;
   return (
+    <div className="overflow-x-auto pb-2">
     <div
       ref={wrapRef}
       className="relative"
@@ -219,6 +225,7 @@ function BracketGrid({
         display: "grid",
         gap: "3rem 4rem",
         gridTemplateColumns: `repeat(${rounds.length}, minmax(220px, 1fr))`,
+        minWidth: minBracketWidth,
       }}
     >
       {rounds.map((r) => (
@@ -265,6 +272,7 @@ function BracketGrid({
           })}
         </svg>
       )}
+    </div>
     </div>
   );
 }

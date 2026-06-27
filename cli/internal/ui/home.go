@@ -51,7 +51,7 @@ func (m HomeModel) fetchGames() tea.Cmd {
 	return func() tea.Msg {
 		todayG, _ := c.Schedule(today, 1)
 		yestG, _ := c.Schedule(yesterday, 1)
-		return homeGamesMsg{games: mlb.MergeLiveSpillover(todayG, yestG)}
+		return homeGamesMsg{games: mlb.MergeRecentSpillover(todayG, yestG, now)}
 	}
 }
 
@@ -79,11 +79,12 @@ func (m HomeModel) fetch() tea.Cmd {
 		wg.Add(3)
 		go func() {
 			defer wg.Done()
-			// Include yesterday's still-live games so matches running past
-			// midnight (filed under yesterday's date) still appear today.
+			// Include yesterday's live and just-finished games so matches that
+			// started before midnight (filed under yesterday's date) still
+			// appear today — for any viewer timezone.
 			todayG, _ := c.Schedule(today, 1)
 			yestG, _ := c.Schedule(yesterday, 1)
-			games = mlb.MergeLiveSpillover(todayG, yestG)
+			games = mlb.MergeRecentSpillover(todayG, yestG, now)
 		}()
 		go func() { defer wg.Done(); hr, _ = c.Leaders("hitting", "homeRuns", 1, season) }()
 		go func() { defer wg.Done(); era, _ = c.Leaders("pitching", "earnedRunAverage", 1, season) }()

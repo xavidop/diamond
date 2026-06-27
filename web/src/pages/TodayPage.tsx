@@ -9,7 +9,7 @@ import {
   SectionTitle,
   Spinner,
 } from "../components/ui/Primitives";
-import { cn, fmtTime, todayIso } from "../lib/utils";
+import { cn, fmtTime, todayIso, shiftDate, mergeRecentSpillover } from "../lib/utils";
 import { useSport } from "../contexts/SportContext";
 import { useFavorites } from "../contexts/FavoritesContext";
 import { usePins } from "../contexts/PinsContext";
@@ -51,9 +51,18 @@ export default function TodayPage() {
   const { favs } = useFavorites();
   const { pins, remove } = usePins();
 
+  const yesterday = shiftDate(date, -1);
   const schedule = useQuery({
     queryKey: ["schedule", sportId, date],
     queryFn: () => api.schedule({ date, sportId }),
+    refetchInterval: 30_000,
+  });
+  // Games that started before the viewer's local midnight are filed under
+  // yesterday's date by the MLB schedule; pull them in so live/just-finished
+  // matches don't vanish at midnight (see mergeRecentSpillover).
+  const yesterdaySchedule = useQuery({
+    queryKey: ["schedule", sportId, yesterday],
+    queryFn: () => api.schedule({ date: yesterday, sportId }),
     refetchInterval: 30_000,
   });
   const hrLeaders = useQuery({
@@ -67,7 +76,9 @@ export default function TodayPage() {
       api.statsLeaders({ leaderCategories: "earnedRunAverage", statGroup: "pitching", sportId, limit: 5 }),
   });
 
-  const games = (schedule.data?.dates?.[0]?.games ?? []) as MlbGame[];
+  const todayGames = (schedule.data?.dates?.[0]?.games ?? []) as MlbGame[];
+  const yesterdayGames = (yesterdaySchedule.data?.dates?.[0]?.games ?? []) as MlbGame[];
+  const games = mergeRecentSpillover(todayGames, yesterdayGames);
   const live     = games.filter((g) => g.status?.abstractGameState === "Live");
   const final    = games.filter((g) => g.status?.abstractGameState === "Final");
   const upcoming = games.filter((g) => g.status?.abstractGameState === "Preview");

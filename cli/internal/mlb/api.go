@@ -23,18 +23,41 @@ func (c *Client) Schedule(date string, sportID int) ([]Game, error) {
 	return resp.Dates[0].Games, nil
 }
 
-// MergeLiveSpillover returns primary plus any game from adjacent that is still
-// Live and not already present. Games that start before midnight are filed
-// under the previous day's date by the schedule API; this keeps them visible on
-// "today" while they're still in progress.
-func MergeLiveSpillover(primary, adjacent []Game) []Game {
+// spilloverWindow bounds how far back a finished adjacent-day game can have
+// started and still count as part of "today". MLB's game day spans US evening
+// into the early morning; a single slate's games all start within ~12h, so 12h
+// keeps the current/just-past slate without dragging in a full stale slate.
+const spilloverWindow = 12 * time.Hour
+
+// MergeRecentSpillover returns primary plus any game from adjacent that is part
+// of the same rolling game window and not already present: still Live, or
+// started within spilloverWindow of now. The MLB schedule files a game under
+// the US date it's played, so for a user east of the US (e.g. Spain) a game
+// that started before their local midnight lands under the previous local date.
+// Keying off the game's absolute start time (gameDate, UTC) rather than the
+// local calendar date keeps those games — live OR just-finished — visible on
+// "today" regardless of the viewer's timezone, instead of vanishing at local
+// midnight in favor of the next slate.
+func MergeRecentSpillover(primary, adjacent []Game, now time.Time) []Game {
 	seen := make(map[int]bool, len(primary))
 	for _, g := range primary {
 		seen[g.GamePk] = true
 	}
 	out := append([]Game{}, primary...)
+	cutoff := now.Add(-spilloverWindow)
 	for _, g := range adjacent {
-		if g.Status.AbstractGameState == "Live" && !seen[g.GamePk] {
+		if seen[g.GamePk] {
+			continue
+		}
+		keep := g.Status.AbstractGameState == "Live"
+		if !keep {
+			// A non-live adjacent game counts only if it actually started
+			// within the window (covers games that just went Final).
+			if start, err := time.Parse(time.RFC3339, g.GameDate); err == nil {
+				keep = !start.Before(cutoff) && !start.After(now)
+			}
+		}
+		if keep {
 			out = append(out, g)
 			seen[g.GamePk] = true
 		}

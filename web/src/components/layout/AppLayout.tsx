@@ -129,7 +129,7 @@ export default function AppLayout() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPaletteOpen(true)}
-              className="btn p-2"
+              className="btn p-2 min-h-[40px] min-w-[40px] justify-center"
               title="Search ⌘K"
             >
               <Search size={14} />
@@ -137,7 +137,7 @@ export default function AppLayout() {
             <NotificationsBell />
             <button
               onClick={() => setDrawerOpen(true)}
-              className="btn p-2"
+              className="btn p-2 min-h-[40px] min-w-[40px] justify-center"
               title="Menu"
             >
               <LayoutGrid size={14} />

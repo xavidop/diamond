@@ -25,8 +25,8 @@ export function SectionTitle({
   right?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex items-end justify-between gap-4">
-      <div>
+    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+      <div className="min-w-0">
         {subtitle && (
           <div className="page-eyebrow mb-1">{subtitle}</div>
         )}

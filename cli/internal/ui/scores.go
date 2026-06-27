@@ -202,11 +202,12 @@ func (m ScoresModel) fetchScores() tea.Cmd {
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
-		// On today, also surface yesterday's still-live games (started before
-		// midnight, so the schedule files them under yesterday's date).
+		// On today, also surface yesterday's live and just-finished games
+		// (started before midnight, so the schedule files them under
+		// yesterday's date) — correct for any viewer timezone.
 		if isToday {
 			if yest, yerr := c.Schedule(day.AddDate(0, 0, -1).Format("2006-01-02"), sport.ID); yerr == nil {
-				games = mlb.MergeLiveSpillover(games, yest)
+				games = mlb.MergeRecentSpillover(games, yest, time.Now())
 			}
 		}
 		// Earliest-start first, so in-progress games that began before midnight

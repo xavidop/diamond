@@ -78,7 +78,7 @@ func notifyPollCmd(sportID int) tea.Cmd {
 		now := time.Now()
 		today, _ := c.Schedule(now.Format("2006-01-02"), sportID)
 		yest, _ := c.Schedule(now.AddDate(0, 0, -1).Format("2006-01-02"), sportID)
-		return notifyScoresMsg{games: mlb.MergeLiveSpillover(today, yest)}
+		return notifyScoresMsg{games: mlb.MergeRecentSpillover(today, yest, now)}
 	}
 }
 
