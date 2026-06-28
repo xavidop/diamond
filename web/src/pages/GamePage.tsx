@@ -11,6 +11,7 @@ import PitchZone from "../components/ui/PitchZone";
 import SprayChart from "../components/ui/SprayChart";
 import WinProbability from "../components/ui/WinProbability";
 import GameInfo from "../components/ui/GameInfo";
+import { HeadToHead, RecentForm } from "../components/ui/MatchupInsights";
 import NotifyButton from "../components/ui/NotifyButton";
 import { useState } from "react";
 import { cn } from "../lib/utils";
@@ -78,6 +79,23 @@ export default function GamePage() {
       </Card>
 
       <Linescore linescore={linescore} away={away} home={home} />
+      <HeadToHead
+        awayId={away?.id}
+        homeId={home?.id}
+        awayName={away?.teamName}
+        homeName={home?.teamName}
+        season={game?.season}
+        endDate={game?.datetime?.officialDate}
+        currentGamePk={Number(id)}
+      />
+      <RecentForm
+        awayId={away?.id}
+        homeId={home?.id}
+        awayName={away?.teamName}
+        homeName={home?.teamName}
+        endDate={game?.datetime?.officialDate}
+        currentGamePk={Number(id)}
+      />
       <div>
         <SectionTitle title="Win Probability" subtitle="Home team WP%, with leverage in tooltip." />
         <WinProbability

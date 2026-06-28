@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -15,6 +16,13 @@ type gameLoadedMsg struct {
 	probs []mlb.WinProbability
 }
 
+// matchupLoadedMsg carries both teams' season schedules, used to derive the
+// head-to-head series and each side's last-10 form.
+type matchupLoadedMsg struct {
+	away []mlb.Game
+	home []mlb.Game
+}
+
 type gameTick struct{}
 
 // GameTab identifies which tab is active in the game view.
@@ -24,13 +32,14 @@ const (
 	GameTabBoxscore GameTab = iota
 	GameTabPlays
 	GameTabPitching
+	GameTabMatchup
 	GameTabWinProb
 	GameTabSpray
 	GameTabPitchZone
 	GameTabInfo
 )
 
-var gameTabs = []string{"Boxscore", "Plays", "Pitching", "Win%", "Spray", "Pitches", "Info"}
+var gameTabs = []string{"Boxscore", "Plays", "Pitching", "Matchup", "Win%", "Spray", "Pitches", "Info"}
 
 // GameModel holds state for the full game detail view.
 type GameModel struct {
@@ -45,6 +54,12 @@ type GameModel struct {
 	err     error
 	client  *mlb.Client
 	width   int
+
+	// Matchup tab data (both teams' season schedules), fetched once.
+	awayGames        []mlb.Game
+	homeGames        []mlb.Game
+	matchupRequested bool
+	matchupLoaded    bool
 }
 
 // NewGameModel constructs a GameModel ready to fetch.
@@ -75,6 +90,17 @@ func (m GameModel) fetch() tea.Cmd {
 	}
 }
 
+// fetchMatchup pulls both teams' full-season schedules so the Matchup tab can
+// derive the head-to-head series and each team's last-10 form.
+func (m GameModel) fetchMatchup(awayID, homeID int, season string) tea.Cmd {
+	c := m.client
+	return func() tea.Msg {
+		away, _ := c.TeamSchedule(awayID, season)
+		home, _ := c.TeamSchedule(homeID, season)
+		return matchupLoadedMsg{away: away, home: home}
+	}
+}
+
 // Update handles messages for the game view.
 func (m GameModel) Update(msg tea.Msg) (GameModel, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -88,9 +114,29 @@ func (m GameModel) Update(msg tea.Msg) (GameModel, tea.Cmd) {
 		m.scroll = 0
 		m.feed = msg.feed
 		m.probs = msg.probs
-		if m.feed != nil && m.feed.GameData.Status.AbstractGameState == "Live" {
-			return m, tea.Tick(20*time.Second, func(time.Time) tea.Msg { return gameTick{} })
+		var cmds []tea.Cmd
+		// Kick off the matchup fetch once, after we know the teams + season.
+		if m.feed != nil && !m.matchupRequested {
+			awayID := m.feed.GameData.Teams.Away.ID
+			homeID := m.feed.GameData.Teams.Home.ID
+			season := ""
+			if d := m.feed.GameData.Datetime.OfficialDate; len(d) >= 4 {
+				season = d[:4]
+			}
+			if season != "" && awayID != 0 && homeID != 0 {
+				m.matchupRequested = true
+				cmds = append(cmds, m.fetchMatchup(awayID, homeID, season))
+			}
 		}
+		if m.feed != nil && m.feed.GameData.Status.AbstractGameState == "Live" {
+			cmds = append(cmds, tea.Tick(20*time.Second, func(time.Time) tea.Msg { return gameTick{} }))
+		}
+		return m, tea.Batch(cmds...)
+
+	case matchupLoadedMsg:
+		m.awayGames = msg.away
+		m.homeGames = msg.home
+		m.matchupLoaded = true
 		return m, nil
 
 	case gameTick:
@@ -191,6 +237,8 @@ func (m GameModel) View() string {
 		body = m.renderPlays()
 	case GameTabPitching:
 		body = m.renderPitching()
+	case GameTabMatchup:
+		body = m.renderMatchup()
 	case GameTabWinProb:
 		body = RenderWinProb(m.probs, awayName, homeName, animProgress(m.tabAt, 14))
 	case GameTabSpray:
@@ -437,6 +485,167 @@ func (m GameModel) renderGameInfo() string {
 	if strings.TrimSpace(sb.String()) == "" {
 		return StyleDim.Render("  No game info available yet.")
 	}
+	return sb.String()
+}
+
+// renderMatchup shows the season head-to-head series and each team's last-10
+// form, both excluding the game currently being viewed.
+func (m GameModel) renderMatchup() string {
+	if !m.matchupLoaded {
+		return StyleDim.Render("  Loading matchup…")
+	}
+
+	awayID := m.feed.GameData.Teams.Away.ID
+	homeID := m.feed.GameData.Teams.Home.ID
+	awayName := m.feed.GameData.Teams.Away.Name
+	homeName := m.feed.GameData.Teams.Home.Name
+
+	section := func(title string) string {
+		return StyleAccent.Bold(true).Render("  "+title) + "  " +
+			StyleDim.Render(strings.Repeat("─", 44)) + "\n"
+	}
+
+	var sb strings.Builder
+
+	// ── Head-to-head ──
+	sb.WriteString(section("HEAD-TO-HEAD"))
+	h2h := headToHeadGames(m.awayGames, awayID, homeID, m.gamePk)
+	if len(h2h) == 0 {
+		sb.WriteString(StyleDim.Render("  No completed meetings this season yet.") + "\n")
+	} else {
+		aWins, hWins := 0, 0
+		for _, g := range h2h {
+			winID := g.Teams.Away.Team.ID
+			if g.Teams.Home.IsWinner {
+				winID = g.Teams.Home.Team.ID
+			}
+			if winID == awayID {
+				aWins++
+			} else if winID == homeID {
+				hWins++
+			}
+		}
+		var lead string
+		switch {
+		case aWins > hWins:
+			lead = fmt.Sprintf("%s lead the series %d-%d", awayName, aWins, hWins)
+		case hWins > aWins:
+			lead = fmt.Sprintf("%s lead the series %d-%d", homeName, hWins, aWins)
+		default:
+			lead = fmt.Sprintf("Series tied %d-%d", aWins, hWins)
+		}
+		sb.WriteString("  " + StyleHeader.Bold(true).Render(lead) + "  " +
+			StyleDim.Render(fmt.Sprintf("(%d games)", len(h2h))) + "\n\n")
+
+		shown := h2h
+		if len(shown) > 5 {
+			shown = shown[:5]
+		}
+		for _, g := range shown {
+			a, h := g.Teams.Away, g.Teams.Home
+			date := g.GameDate
+			if t, err := time.Parse(time.RFC3339, g.GameDate); err == nil {
+				date = t.In(time.Local).Format("Jan 02")
+			}
+			aStr := fmt.Sprintf("%3s %2d", a.Team.Abbreviation, a.Score)
+			hStr := fmt.Sprintf("%2d %-3s", h.Score, h.Team.Abbreviation)
+			if a.IsWinner {
+				aStr = StyleAccent.Bold(true).Render(aStr)
+			} else {
+				aStr = StyleDim.Render(aStr)
+			}
+			if h.IsWinner {
+				hStr = StyleAccent.Bold(true).Render(hStr)
+			} else {
+				hStr = StyleDim.Render(hStr)
+			}
+			winAbbr := a.Team.Abbreviation
+			if h.IsWinner {
+				winAbbr = h.Team.Abbreviation
+			}
+			sb.WriteString(fmt.Sprintf("  %-7s %s %s %s   %s\n",
+				date, aStr, StyleDim.Render("-"), hStr, StyleDim.Render(winAbbr+" W")))
+		}
+	}
+
+	// ── Last 10 form per team ──
+	sb.WriteString("\n" + section("LAST 10 GAMES"))
+	sb.WriteString(m.renderTeamForm(awayID, awayName, m.awayGames))
+	sb.WriteString("\n")
+	sb.WriteString(m.renderTeamForm(homeID, homeName, m.homeGames))
+
+	return sb.String()
+}
+
+// headToHeadGames returns completed games between awayID and homeID (from the
+// away team's season schedule), newest first, excluding the current game.
+func headToHeadGames(awayTeamGames []mlb.Game, awayID, homeID, excludePk int) []mlb.Game {
+	var out []mlb.Game
+	for _, g := range awayTeamGames {
+		if g.Status.AbstractGameState != "Final" || g.GamePk == excludePk {
+			continue
+		}
+		a, h := g.Teams.Away.Team.ID, g.Teams.Home.Team.ID
+		if (a == awayID && h == homeID) || (a == homeID && h == awayID) {
+			out = append(out, g)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].GameDate > out[j].GameDate })
+	return out
+}
+
+// renderTeamForm renders one team's last-10 record, W/L heat strip, and
+// runs-for/against averages, excluding the current game.
+func (m GameModel) renderTeamForm(teamID int, name string, games []mlb.Game) string {
+	filtered := make([]mlb.Game, 0, len(games))
+	for _, g := range games {
+		if g.GamePk != m.gamePk {
+			filtered = append(filtered, g)
+		}
+	}
+	sort.Slice(filtered, func(i, j int) bool { return filtered[i].GameDate < filtered[j].GameDate })
+	res := gameLogResults(filtered, teamID)
+	if len(res) > 10 {
+		res = res[len(res)-10:]
+	}
+	if len(res) == 0 {
+		return "  " + teamHeadline(teamID, name) + "  " + StyleDim.Render("no recent games") + "\n"
+	}
+
+	winColor := lipgloss.Color("#22c55e")
+	lossColor := lipgloss.Color("#ef4444")
+	// Each game is drawn as a wide segment so 10 games read as a long bar
+	// rather than a thin 10-char strip.
+	const blocksPerGame = 4
+	block := strings.Repeat("█", blocksPerGame)
+	wins, losses, rf, ra := 0, 0, 0, 0
+	var strip strings.Builder
+	for _, r := range res {
+		if r.Win {
+			wins++
+			strip.WriteString(lipgloss.NewStyle().Foreground(winColor).Render(block))
+		} else {
+			losses++
+			strip.WriteString(lipgloss.NewStyle().Foreground(lossColor).Render(block))
+		}
+		rf += r.For
+		ra += r.Against
+	}
+	n := float64(len(res))
+	rfg, rag := float64(rf)/n, float64(ra)/n
+	diff := rfg - rag
+	diffStr := fmt.Sprintf("%+.1f", diff)
+	diffStyled := lipgloss.NewStyle().Foreground(winColor).Render(diffStr)
+	if diff < 0 {
+		diffStyled = lipgloss.NewStyle().Foreground(lossColor).Render(diffStr)
+	}
+
+	var sb strings.Builder
+	sb.WriteString("  " + teamHeadline(teamID, name) + "  " +
+		StyleAccent.Bold(true).Render(fmt.Sprintf("%d-%d", wins, losses)) + "  " +
+		StyleDim.Render(fmt.Sprintf("last %d", len(res))) + "\n")
+	sb.WriteString("  " + strip.String() + "\n")
+	sb.WriteString("  " + StyleDim.Render(fmt.Sprintf("RF %.1f/g   RA %.1f/g   DIFF ", rfg, rag)) + diffStyled + "\n")
 	return sb.String()
 }
 

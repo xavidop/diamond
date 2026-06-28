@@ -97,11 +97,14 @@ export default function PlayerPage() {
       <Card className="p-0 overflow-hidden">
         <div className="flex flex-col sm:flex-row">
           {/* Headshot + jersey badge */}
-          <div className="relative shrink-0 sm:w-[140px] h-[160px] sm:h-auto bg-pitch-900">
+          {/* Mobile: full headshot centered on the dark panel (w-auto + contain
+              so the face is always visible, not cropped to the cap). Desktop:
+              a narrow cover strip beside the info column. */}
+          <div className="relative shrink-0 h-[210px] sm:h-auto sm:w-[140px] bg-pitch-900 flex items-center justify-center overflow-hidden">
             <img
-              src={playerHeadshotUrl(p.id, 213)}
+              src={playerHeadshotUrl(p.id, 426)}
               alt={p.fullName}
-              className="h-full w-full object-cover object-top"
+              className="h-full w-auto object-contain sm:w-full sm:object-cover sm:object-top"
               onError={(e) => { (e.target as HTMLImageElement).style.visibility = "hidden"; }}
             />
             {p.primaryNumber && (

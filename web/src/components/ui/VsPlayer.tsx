@@ -114,7 +114,6 @@ function OpponentPicker({
           className="absolute left-3 top-1/2 -translate-y-1/2 text-pitch-300/60"
         />
         <input
-          autoFocus
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={

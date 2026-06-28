@@ -353,6 +353,9 @@ type LiveFeed struct {
 			FirstPitch          string `json:"firstPitch"`
 			GameDurationMinutes int    `json:"gameDurationMinutes"`
 		} `json:"gameInfo"`
+		Datetime struct {
+			OfficialDate string `json:"officialDate"`
+		} `json:"datetime"`
 	} `json:"gameData"`
 	LiveData struct {
 		Linescore struct {

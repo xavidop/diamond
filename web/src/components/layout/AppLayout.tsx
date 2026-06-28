@@ -6,7 +6,7 @@ import {
   Users, BookOpen, LayoutGrid, Sparkles, Info,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSport } from "../../contexts/SportContext";
 import SportPicker from "./SportPicker";
 import { useFavorites } from "../../contexts/FavoritesContext";
@@ -78,7 +78,14 @@ export default function AppLayout() {
   }, []);
 
   const location = useLocation();
-  useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
+  const mainRef = useRef<HTMLElement>(null);
+  // On every route change: close the mobile drawer and reset the scroll
+  // position. <main> is the scroll container (overflow-y-auto), not the window,
+  // so navigating otherwise lands you wherever the previous page was scrolled.
+  useEffect(() => {
+    setDrawerOpen(false);
+    mainRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [location.pathname]);
 
   return (
     <div className="flex h-full bg-pitch-950 overflow-hidden diamond-app-root">
@@ -146,7 +153,7 @@ export default function AppLayout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
+        <main ref={mainRef} className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:py-8 lg:pb-8">
             <ErrorBoundary>
               <Suspense fallback={
