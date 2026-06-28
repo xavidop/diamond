@@ -29,8 +29,35 @@
   }
   html.light .diamond-chrome-inner { border-color: rgba(0,0,0,0.08) !important; }
   html.light .diamond-chrome .text-white { color: #13131e !important; }
-  html.light .diamond-chrome [class*="text-white/"] { color: rgba(0,0,0,0.45) !important; }
-  html.light .diamond-chrome .text-volt-500 { color: #5a6800 !important; }
+  /* Muted white-opacity labels in chrome (sidebar section headers, search
+     placeholder, ⌘K, footer). At 0.45 alpha they only hit ~3.1:1 on the cream
+     chrome — below WCAG AA. 0.6 clears it (~5.1:1) while staying muted. */
+  html.light .diamond-chrome [class*="text-white/"] { color: rgba(0,0,0,0.6) !important; }
+  /* Attribute match (not exact class) so opacity/hover variants are caught too
+     — e.g. text-volt-500/70, hover:text-volt-500. Exact-class rules missed
+     these, leaving light-yellow links unreadable. */
+  html.light .diamond-chrome [class*="text-volt-"] { color: #5a6800 !important; }
+  /* Dark chips/badges nested INSIDE chrome popovers (e.g. SportPicker level
+     badges: bg-pitch-800) must go light so the darkened pitch text on them
+     stays readable. The :not(.diamond-chrome) guard is essential: chrome
+     surfaces that ALSO carry a bg-pitch class (the notification panel and
+     SportPicker dropdown are bg-pitch-900 + .diamond-chrome, nested under the
+     sidebar's .diamond-chrome) must keep their solid #e5e2db surface — without
+     the guard this higher-specificity rule would make them translucent. */
+  html.light .diamond-chrome [class*="bg-pitch-"]:not(.diamond-chrome) { background-color: rgba(0,0,0,0.08) !important; }
+
+  /* Muted pitch text scale → readable dark neutrals on light surfaces.
+     The dark palette's pitch-300/400 (#9494b0 / #6b6b8a) only clear ~3.9:1 on
+     the cream chrome (#e5e2db) and ~4.3:1 on the page (#f0ede6) — both below
+     WCAG AA (4.5:1). Used in 160+ places (headers, empty states, captions,
+     secondary labels). Scoped to main + chrome (light surfaces) ONLY, so the
+     intentionally-dark overlays (command palette, shortcuts modal) keep their
+     light-on-dark text. pitch-300 is the more-prominent shade → darker
+     neutral; pitch-400 is the secondary label → slightly lighter. */
+  html.light .diamond-app-root main .text-pitch-300,
+  html.light .diamond-chrome .text-pitch-300 { color: #3f3f4d !important; }
+  html.light .diamond-app-root main .text-pitch-400,
+  html.light .diamond-chrome .text-pitch-400 { color: #565666 !important; }
   html.light .sidebar-search-btn {
     background: rgba(0,0,0,0.07) !important;
     border-color: rgba(0,0,0,0.11) !important;
@@ -45,11 +72,14 @@
   html.light .diamond-app-root main .text-white { color: #13131e !important; }
   html.light .diamond-app-root main [class*="text-white/"] { color: rgba(13,13,20,0.6) !important; }
 
-  /* Volt accents: darker olive-green for light bg */
-  html.light .diamond-app-root main .text-volt-500,
-  html.light .diamond-app-root main .text-volt-400,
+  /* Volt accents: darker olive-green for light bg. Includes volt-300 (#f5ffa0,
+     the lightest yellow) which was previously unmapped here and rendered at
+     ~1.07:1 — effectively invisible — on pages like Postseason/Glossary.
+     #626e00 (vs the old #6b7a00) clears WCAG AA (≥4.5:1) for the small accent
+     numerals and eyebrows that sit on the page/card backgrounds. */
+  html.light .diamond-app-root main [class*="text-volt-"],
   html.light .diamond-app-root main .live-badge,
-  html.light .diamond-app-root main .page-eyebrow { color: #6b7a00 !important; }
+  html.light .diamond-app-root main .page-eyebrow { color: #626e00 !important; }
   html.light .diamond-app-root main .page-title { color: #13131e !important; }
 
   /* pitch-* dark surface bg → transparent light neutrals (main only!) */
@@ -70,7 +100,7 @@
      .nav-item/.table-base) live in @layer components below, not here — a
      @layer base rule loses to the component definitions in @layer components
      regardless of specificity, so these must share that layer to win. */
-  html.light .page-eyebrow { color: #6b7a00 !important; }
+  html.light .page-eyebrow { color: #626e00 !important; }
 
   /* Color-blind safe palette (IBM 5-color) */
   html.cbsafe {

@@ -57,8 +57,14 @@ export default function NotificationsBell({
       {open && (
         <div
           className={cn(
-            "absolute z-50 w-[300px] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-xl border border-white/10 bg-pitch-900 shadow-xl diamond-chrome",
-            placement === "top" ? "bottom-full left-0 mb-2" : "top-full right-0 mt-2"
+            "absolute z-50 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-xl border border-white/10 bg-pitch-900 shadow-xl diamond-chrome",
+            // The footer bell is the right-most icon in a left-anchored sidebar.
+            // On mobile (narrow drawer) anchor the panel to the bell's right so a
+            // 300px panel can't shoot off the right edge; on lg+ the sidebar sits
+            // at the screen's left, so open right into the content area instead.
+            placement === "top"
+              ? "bottom-full right-0 mb-2 w-[260px] lg:left-0 lg:right-auto lg:w-[300px]"
+              : "top-full right-0 mt-2 w-[300px]"
           )}
         >
           <div className="flex items-center justify-between px-3 py-2">
