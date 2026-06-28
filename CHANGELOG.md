@@ -1,3 +1,15 @@
+# [1.7.0](https://github.com/xavidop/diamond/compare/v1.6.0...v1.7.0) (2026-06-28)
+
+
+### Bug Fixes
+
+* UI fixes ([f99b4f7](https://github.com/xavidop/diamond/commit/f99b4f73ca2d57354acfec6ce8b6b34eb456a9d9))
+
+
+### Features
+
+* added face to face ([3afaa6a](https://github.com/xavidop/diamond/commit/3afaa6a2ece3671c4aae8d682e21de0d4e3f6aec))
+
 # [1.6.0](https://github.com/xavidop/diamond/compare/v1.5.2...v1.6.0) (2026-06-27)
 
 
