@@ -145,7 +145,6 @@ export default function AppLayout() {
               <Search size={14} />
             </button>
             <NotificationsBell />
-            <MiniButton />
             <button
               onClick={() => setDrawerOpen(true)}
               className="btn p-2 min-h-[40px] min-w-[40px] justify-center"
@@ -376,12 +375,14 @@ function NavGroup({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
+// Desktop-only: the mini viewer uses Document Picture-in-Picture, which mobile
+// browsers don't support — so the trigger is hidden below the lg breakpoint.
 function MiniButton() {
   const { openMini } = useMiniViewer();
   return (
     <button
       onClick={() => openMini()}
-      className="btn p-1.5"
+      className="btn p-1.5 hidden lg:inline-flex"
       title="Mini scoreboard (pop-out)"
       aria-label="Open mini scoreboard"
     >

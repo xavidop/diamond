@@ -159,6 +159,22 @@
   .table-base {
     @apply w-full text-sm;
   }
+  /* Keep cells on one line so the table grows to its natural width and scrolls
+     inside its overflow-x-auto wrapper on narrow/mobile screens, instead of
+     letting a truncating name column collapse to a single letter. */
+  .table-base thead th,
+  .table-base tbody td {
+    @apply whitespace-nowrap;
+  }
+  /* Name cells use `truncate`, whose overflow:hidden lets the flex item shrink
+     to ~1 char even when the cell is nowrap. Inside a scrolling table we want
+     the full name (the table scrolls instead of clipping), so neutralize the
+     clip while keeping the single-line behavior. !important is required because
+     `truncate` is a utility-layer class that otherwise wins on layer order. */
+  .table-base .truncate {
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
   .table-base thead th {
     @apply text-left font-display font-bold text-[9px] tracking-widest uppercase
            text-white/30 border-b border-white/5 px-3 py-2;

@@ -80,7 +80,7 @@ export default function GamePage() {
           <TeamBlock team={home} score={homeScore} align="right" />
           <button
             onClick={() => openMini(Number(id))}
-            className="btn btn-accent"
+            className="btn btn-accent hidden lg:inline-flex"
             title="Open this game in the mini viewer"
           >
             <Tv size={14} /> Pop out
