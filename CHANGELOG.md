@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/xavidop/diamond/compare/v1.9.0...v1.10.0) (2026-06-30)
+
+
+### Features
+
+* **mini:** floating mini viewer — live scoreboard in a PiP window ([1cb1fda](https://github.com/xavidop/diamond/commit/1cb1fda71db9b0be23a308f86344a7c488fe3b28))
+
 # [1.9.0](https://github.com/xavidop/diamond/compare/v1.8.0...v1.9.0) (2026-06-30)
 
 
