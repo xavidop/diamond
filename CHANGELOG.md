@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/xavidop/diamond/compare/v1.7.0...v1.8.0) (2026-06-30)
+
+
+### Features
+
+* per-team transactions and news (CLI + web) ([bc037aa](https://github.com/xavidop/diamond/commit/bc037aae3efdf956d650a11684fae748e743f497))
+
 # [1.7.0](https://github.com/xavidop/diamond/compare/v1.6.0...v1.7.0) (2026-06-28)
 
 
