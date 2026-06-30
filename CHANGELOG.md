@@ -1,3 +1,10 @@
+## [1.10.2](https://github.com/xavidop/diamond/compare/v1.10.1...v1.10.2) (2026-06-30)
+
+
+### Bug Fixes
+
+* score on mobile ([588dfef](https://github.com/xavidop/diamond/commit/588dfef6a31beeb9b221dd691ccd27a282ed9cff))
+
 ## [1.10.1](https://github.com/xavidop/diamond/compare/v1.10.0...v1.10.1) (2026-06-30)
 
 
