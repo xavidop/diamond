@@ -34,6 +34,7 @@ const (
 	ViewFavorites
 	ViewGlossary
 	ViewDiamondGPT
+	ViewNews
 )
 
 // NavigateMsg switches the active content view. View==ViewMenu means "go back":
@@ -144,6 +145,7 @@ type App struct {
 	compare      CompareModel
 	teamCompare  TeamCompareModel
 	transactions TransactionsModel
+	news         NewsModel
 	history      HistoryModel
 	draft        DraftModel
 	venues       VenuesModel
@@ -190,6 +192,7 @@ func NewApp(startView ViewID, gamePk int, sport mlb.Sport, query ...string) App 
 		compare:      NewCompareModel(sport),
 		teamCompare:  NewTeamCompareModel(sport),
 		transactions: NewTransactionsModel(),
+		news:         NewNewsModel(sport),
 		history:      NewHistoryModel(),
 		draft:        NewDraftModel(),
 		venues:       NewVenuesModel(),
@@ -306,6 +309,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.streaks = NewStreaksModel(a.sport)
 		a.compare = NewCompareModel(a.sport)
 		a.teamCompare = NewTeamCompareModel(a.sport)
+		a.news = NewNewsModel(a.sport)
 		a.home = NewHomeModel()
 		na, szc := a.applySize()
 		return na, tea.Batch(szc, na.home.Init(), na.activeInit())
@@ -489,6 +493,8 @@ func (a App) activeInit() tea.Cmd {
 		return a.teamCompare.Init()
 	case ViewTransactions:
 		return a.transactions.Init()
+	case ViewNews:
+		return a.news.Init()
 	case ViewHistory:
 		return a.history.Init()
 	case ViewDraft:
@@ -537,6 +543,8 @@ func (a App) applySize() (App, tea.Cmd) {
 	cmds = append(cmds, c)
 	a.transactions, c = a.transactions.Update(cw)
 	cmds = append(cmds, c)
+	a.news, c = a.news.Update(cw)
+	cmds = append(cmds, c)
 	a.history, c = a.history.Update(cw)
 	cmds = append(cmds, c)
 	a.draft, c = a.draft.Update(cw)
@@ -582,6 +590,8 @@ func (a App) updateActive(msg tea.Msg) (App, tea.Cmd) {
 		a.teamCompare, cmd = a.teamCompare.Update(msg)
 	case ViewTransactions:
 		a.transactions, cmd = a.transactions.Update(msg)
+	case ViewNews:
+		a.news, cmd = a.news.Update(msg)
 	case ViewHistory:
 		a.history, cmd = a.history.Update(msg)
 	case ViewDraft:
@@ -664,6 +674,8 @@ func (a App) contentView() string {
 		return a.teamCompare.View()
 	case ViewTransactions:
 		return a.transactions.View()
+	case ViewNews:
+		return a.news.View()
 	case ViewHistory:
 		return a.history.View()
 	case ViewDraft:

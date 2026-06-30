@@ -3,7 +3,7 @@ import {
   CalendarDays, Trophy, Shield, Flame, TerminalSquare, Search,
   Activity, Home, GitCompare, History, Layers, Star, Sun, Moon,
   Eye, X, Award, ArrowLeftRight, MapPin, Keyboard, Zap, Crown,
-  Users, BookOpen, LayoutGrid, Sparkles, Info,
+  Users, BookOpen, LayoutGrid, Sparkles, Info, Newspaper,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -29,6 +29,7 @@ const MAIN_NAV = [
   { to: "/teams",       label: "Teams",      icon: Shield                  },
   { to: "/leaders",     label: "Leaders",    icon: Flame                   },
   { to: "/streaks",     label: "Streaks",    icon: Zap                     },
+  { to: "/news",        label: "News",       icon: Newspaper               },
 ];
 
 const EXPLORE_NAV = [

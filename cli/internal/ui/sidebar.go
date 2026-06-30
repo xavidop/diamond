@@ -28,6 +28,7 @@ var navItems = []navItem{
 	{"Postseason", ViewPostseason},
 	{"Awards", ViewAwards},
 	{"Transactions", ViewTransactions},
+	{"News", ViewNews},
 	{"History", ViewHistory},
 	{"Draft", ViewDraft},
 	{"Venues", ViewVenues},

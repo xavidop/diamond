@@ -9,6 +9,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/xavidop/diamond/cli/internal/espn"
 	"github.com/xavidop/diamond/cli/internal/fav"
 	"github.com/xavidop/diamond/cli/internal/mlb"
 )
@@ -37,6 +38,8 @@ type teamPlayerLoadedMsg struct {
 }
 
 type teamGameLogLoadedMsg struct{ games []GameResult }
+type teamTxnsLoadedMsg struct{ txns []mlb.Transaction }
+type teamNewsLoadedMsg struct{ news []espn.Article }
 
 type teamViewState int
 
@@ -46,7 +49,7 @@ const (
 	teamStatePlayer
 )
 
-var teamTabNames = []string{"Roster", "Hitting", "Pitching", "Depth", "Game Log"}
+var teamTabNames = []string{"Roster", "Hitting", "Pitching", "Depth", "Game Log", "Transactions", "News"}
 
 type TeamModel struct {
 	sport    mlb.Sport
@@ -80,6 +83,15 @@ type TeamModel struct {
 	teamGames        []GameResult
 	teamGamesLoaded  bool
 	gameLogEnteredAt int
+
+	// transactions tab
+	teamTxns       []mlb.Transaction
+	teamTxnsLoaded bool
+
+	// news tab
+	teamNews       []espn.Article
+	teamNewsLoaded bool
+	newsCursor     int
 }
 
 func NewTeamModel(sport mlb.Sport, query ...string) TeamModel {
@@ -138,6 +150,14 @@ func (m TeamModel) Update(msg tea.Msg) (TeamModel, tea.Cmd) {
 		m.teamGames = msg.games
 		m.teamGamesLoaded = true
 		return m, nil
+	case teamTxnsLoadedMsg:
+		m.teamTxns = msg.txns
+		m.teamTxnsLoaded = true
+		return m, nil
+	case teamNewsLoadedMsg:
+		m.teamNews = msg.news
+		m.teamNewsLoaded = true
+		return m, nil
 	case ErrMsg:
 		m.loading = false
 		m.playerLoading = false
@@ -162,6 +182,10 @@ func (m TeamModel) Update(msg tea.Msg) (TeamModel, tea.Cmd) {
 					m.state = teamStateDetail
 					m.tab = 0
 					m.loading = true
+					// reset per-team lazy caches so a newly selected team never shows the previous team's data
+					m.teamGames, m.teamGamesLoaded = nil, false
+					m.teamTxns, m.teamTxnsLoaded = nil, false
+					m.teamNews, m.teamNewsLoaded, m.newsCursor = nil, false, 0
 					return m, m.loadTeamDetail(t.ID)
 				}
 			case "esc":
@@ -181,33 +205,25 @@ func (m TeamModel) Update(msg tea.Msg) (TeamModel, tea.Cmd) {
 				}
 			case "tab", "right", "l":
 				m.tab = (m.tab + 1) % len(teamTabNames)
-				if m.tab == 3 {
-					m.depthEnteredAt = animFrame
-				}
-				if m.tab == 4 {
-					m.gameLogEnteredAt = animFrame
-					if !m.teamGamesLoaded {
-						return m, m.loadTeamGameLog(m.team.ID)
-					}
-				}
+				cmd := m.onTeamTabChange()
+				return m, cmd
 			case "shift+tab", "left", "h":
 				m.tab = (m.tab - 1 + len(teamTabNames)) % len(teamTabNames)
-				if m.tab == 3 {
-					m.depthEnteredAt = animFrame
-				}
-				if m.tab == 4 {
-					m.gameLogEnteredAt = animFrame
-					if !m.teamGamesLoaded {
-						return m, m.loadTeamGameLog(m.team.ID)
-					}
-				}
+				cmd := m.onTeamTabChange()
+				return m, cmd
 			case "up", "k":
 				if m.tab == 0 && m.rosterCursor > 0 {
 					m.rosterCursor--
 				}
+				if m.tab == 6 && m.newsCursor > 0 {
+					m.newsCursor--
+				}
 			case "down", "j":
 				if m.tab == 0 && m.rosterCursor < len(m.rosterOrder)-1 {
 					m.rosterCursor++
+				}
+				if m.tab == 6 && m.newsCursor < len(m.teamNews)-1 {
+					m.newsCursor++
 				}
 			case "enter":
 				if m.tab == 0 && m.rosterCursor < len(m.rosterOrder) {
@@ -215,6 +231,9 @@ func (m TeamModel) Update(msg tea.Msg) (TeamModel, tea.Cmd) {
 					m.playerLoading = true
 					m.player = nil
 					return m, m.loadPlayer(m.rosterOrder[m.rosterCursor].Person.ID)
+				}
+				if m.tab == 6 && m.newsCursor < len(m.teamNews) {
+					return m, openURL(m.teamNews[m.newsCursor].WebURL)
 				}
 			case "esc":
 				m.state = teamStateSearch
@@ -306,6 +325,59 @@ func (m TeamModel) loadTeamGameLog(teamID int) tea.Cmd {
 			return ErrMsg{Err: err}
 		}
 		return teamGameLogLoadedMsg{games: gameLogResults(games, teamID)}
+	}
+}
+
+// onTeamTabChange fires the animation/lazy-load side effects for the tab the
+// user just moved to. All loads are guarded on m.team to stay panic-safe.
+func (m *TeamModel) onTeamTabChange() tea.Cmd {
+	switch m.tab {
+	case 3:
+		m.depthEnteredAt = animFrame
+	case 4:
+		m.gameLogEnteredAt = animFrame
+		if !m.teamGamesLoaded && m.team != nil {
+			return m.loadTeamGameLog(m.team.ID)
+		}
+	case 5:
+		if !m.teamTxnsLoaded && m.team != nil {
+			return m.loadTeamTransactions(m.team.ID)
+		}
+	case 6:
+		if !m.teamNewsLoaded && m.team != nil {
+			return m.loadTeamNews(m.team.ID)
+		}
+	}
+	return nil
+}
+
+// loadTeamTransactions fetches this team's roster moves for the season to date.
+func (m TeamModel) loadTeamTransactions(teamID int) tea.Cmd {
+	c := m.client
+	year := time.Now().Year()
+	start := fmt.Sprintf("%d-01-01", year)
+	end := time.Now().Format("2006-01-02")
+	return func() tea.Msg {
+		ts, err := c.TeamTransactions(teamID, start, end)
+		if err != nil {
+			return ErrMsg{Err: err}
+		}
+		return teamTxnsLoadedMsg{txns: ts}
+	}
+}
+
+// loadTeamNews fetches ESPN news for this team (MLB only).
+func (m TeamModel) loadTeamNews(teamID int) tea.Cmd {
+	espnID, ok := espnTeamID(teamID)
+	return func() tea.Msg {
+		if !ok {
+			return teamNewsLoadedMsg{news: nil}
+		}
+		arts, err := espn.DefaultClient().News(espnID, 20)
+		if err != nil {
+			return ErrMsg{Err: err}
+		}
+		return teamNewsLoadedMsg{news: arts}
 	}
 }
 
@@ -459,11 +531,18 @@ func (m TeamModel) View() string {
 		} else {
 			body = RenderGameLogStrip(m.teamGames, animProgress(m.gameLogEnteredAt, 16))
 		}
+	case 5:
+		body = m.renderTeamTransactions()
+	case 6:
+		body = m.renderTeamNews()
 	}
 
 	help := HelpBar("Tab/⇧Tab change view", "f favorite", "esc back")
 	if m.tab == 0 {
 		help = HelpBar("↑/↓ select player", "Enter stats", "Tab/⇧Tab change view", "f favorite", "esc back")
+	}
+	if m.tab == 6 {
+		help = HelpBar("↑/↓ select", "Enter open in browser", "Tab/⇧Tab change view", "esc back")
 	}
 	return header + "\n" + tabs + "\n\n" + body + "\n" + help
 }
@@ -628,6 +707,81 @@ func (m TeamModel) renderPitching() string {
 
 	title := StyleDim.Render("  Season Pitching — " + season)
 	return title + "\n\n" + cards + "\n\n" + hdr + "\n" + sep + "\n" + row
+}
+
+// renderTeamTransactions lists this team's season transactions, newest first,
+// grouped by date — mirroring the global Transactions screen's styling.
+func (m TeamModel) renderTeamTransactions() string {
+	if !m.teamTxnsLoaded {
+		return loadingView("Loading transactions…")
+	}
+	if len(m.teamTxns) == 0 {
+		return StyleDim.Render("  No transactions this season.")
+	}
+	txns := make([]mlb.Transaction, len(m.teamTxns))
+	copy(txns, m.teamTxns)
+	for i, j := 0, len(txns)-1; i < j; i, j = i+1, j-1 {
+		txns[i], txns[j] = txns[j], txns[i]
+	}
+	var lines []string
+	lastDate := ""
+	for _, t := range txns {
+		d := t.Date
+		if len(d) >= 10 {
+			d = d[:10]
+		}
+		if d != lastDate {
+			if lastDate != "" {
+				lines = append(lines, "")
+			}
+			lines = append(lines, "  "+StyleAccent.Bold(true).Render(prettyDate(d)))
+			lastDate = d
+		}
+		pill := lipgloss.NewStyle().Foreground(txnTypeColor(t.TypeCode)).Render(fmt.Sprintf("%-4s", t.TypeCode))
+		desc := t.Description
+		if desc == "" {
+			desc = t.Person.FullName
+		}
+		lines = append(lines, "  "+pill+" "+truncate(desc, m.width-10))
+	}
+	if len(lines) > 28 {
+		lines = lines[:28]
+		lines = append(lines, "  "+StyleDim.Render("… more on the Transactions screen"))
+	}
+	return strings.Join(lines, "\n")
+}
+
+// renderTeamNews lists this team's latest ESPN headlines; the cursor row is
+// highlighted and Enter opens it in the browser.
+func (m TeamModel) renderTeamNews() string {
+	if m.team == nil {
+		return StyleDim.Render("  News not available for this team.")
+	}
+	if !m.teamNewsLoaded {
+		return loadingView("Loading news…")
+	}
+	if _, ok := espnTeamID(m.team.ID); !ok {
+		return StyleDim.Render("  News not available for this team.")
+	}
+	if len(m.teamNews) == 0 {
+		return StyleDim.Render("  No news right now.")
+	}
+	var b strings.Builder
+	for i, a := range m.teamNews {
+		badge := lipgloss.NewStyle().Foreground(colorCyan).Render(fmt.Sprintf("%-7s", a.Type))
+		when := ""
+		if !a.Published.IsZero() {
+			when = StyleDim.Render("  " + a.Published.Format("Jan 2"))
+		}
+		headline := truncate(a.Headline, m.width-16)
+		if i == m.newsCursor {
+			b.WriteString(StyleAccent.Bold(true).Render("▸ ") + badge + " " +
+				StyleAccent.Bold(true).Render(headline) + when + "\n")
+		} else {
+			b.WriteString("  " + badge + " " + StyleItemNormal.Render(headline) + when + "\n")
+		}
+	}
+	return strings.TrimRight(b.String(), "\n")
 }
 
 // gameLogResults reduces a team's schedule to final-game W/L results.

@@ -121,9 +121,9 @@ export default function TransactionsPage() {
           </div>
           <Card pad={false}>
             <ul className="divide-y divide-white/5">
-              {items.map((t: any) => (
+              {items.map((t: any, i: number) => (
                 <li
-                  key={`${t.id}-${t.date}`}
+                  key={`${t.id}-${t.date}-${i}`}
                   className="px-4 py-3 flex items-start gap-3"
                 >
                   <span className="pill mt-0.5 shrink-0">

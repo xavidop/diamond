@@ -262,6 +262,18 @@ func (c *Client) Transactions(startDate, endDate string) ([]Transaction, error) 
 	return resp.Transactions, nil
 }
 
+// TeamTransactions returns the roster-move feed for one team over a date range.
+func (c *Client) TeamTransactions(teamID int, startDate, endDate string) ([]Transaction, error) {
+	endpoint := fmt.Sprintf("%s/transactions?teamId=%d&startDate=%s&endDate=%s", c.v1, teamID, startDate, endDate)
+	var resp struct {
+		Transactions []Transaction `json:"transactions"`
+	}
+	if err := c.get(endpoint, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Transactions, nil
+}
+
 // Draft returns all rounds + picks for a draft year.
 func (c *Client) Draft(year string) ([]DraftRound, error) {
 	endpoint := fmt.Sprintf("%s/draft/%s", c.v1, year)

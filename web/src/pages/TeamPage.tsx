@@ -10,6 +10,10 @@ import {
 import FavButton from "../components/ui/FavButton";
 import TeamGameLog from "../components/ui/TeamGameLog";
 import DepthChart from "../components/ui/DepthChart";
+import TeamTransactions from "../components/ui/TeamTransactions";
+import NewsList from "../components/ui/NewsList";
+import { useNews } from "../api/espn";
+import { espnTeamId } from "../lib/espnTeams";
 import { MapPin, Calendar, Trophy } from "lucide-react";
 
 type MlbTeam = {
@@ -56,6 +60,9 @@ export default function TeamPage() {
     queryKey: ["teamStats", id],
     queryFn: () => api.teamStats(id),
   });
+
+  const espnId = espnTeamId(id);
+  const news = useNews({ espnTeamId: espnId, limit: 6 });
 
   if (team.isLoading) {
     return (
@@ -104,9 +111,10 @@ export default function TeamPage() {
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <TeamGameLog teamId={t.id} season={new Date().getFullYear()} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2 space-y-6">
-          <TeamGameLog teamId={t.id} season={new Date().getFullYear()} />
           <div>
             <SectionTitle title="Depth Chart" subtitle="Field positions and pitching staff." />
             {roster.isLoading && <Spinner />}
@@ -120,11 +128,32 @@ export default function TeamPage() {
           </div>
         </div>
 
-        <div>
-          <SectionTitle title="Team Stats" subtitle="Season" />
-          {stats.isLoading && <Spinner />}
-          {stats.error && <ErrorBox error={stats.error} />}
-          {stats.data && <TeamStats data={stats.data} />}
+        <div className="space-y-6">
+          <div>
+            <SectionTitle title="Team Stats" subtitle="Season" />
+            {stats.isLoading && <Spinner />}
+            {stats.error && <ErrorBox error={stats.error} />}
+            {stats.data && <TeamStats data={stats.data} />}
+          </div>
+          <div>
+            <SectionTitle title="Transactions" subtitle="Recent moves" />
+            <TeamTransactions teamId={t.id} limit={8} />
+          </div>
+          <div>
+            <SectionTitle title="News" subtitle="Latest headlines" />
+            {espnId === undefined ? (
+              <div className="text-sm text-pitch-300/60">
+                News not available for this team.
+              </div>
+            ) : (
+              <NewsList
+                articles={news.data}
+                isLoading={news.isLoading}
+                error={news.error}
+                compact
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
