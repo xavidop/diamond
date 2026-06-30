@@ -1,3 +1,10 @@
+## [1.10.1](https://github.com/xavidop/diamond/compare/v1.10.0...v1.10.1) (2026-06-30)
+
+
+### Bug Fixes
+
+* **mobile:** disable mini viewer pop-out on mobile + make data tables scroll ([c24c88f](https://github.com/xavidop/diamond/commit/c24c88fc650d503ce1ab937d4b6522d5a99cb227))
+
 # [1.10.0](https://github.com/xavidop/diamond/compare/v1.9.0...v1.10.0) (2026-06-30)
 
 
