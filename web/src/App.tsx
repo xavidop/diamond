@@ -8,6 +8,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { PinsProvider } from "./contexts/PinsContext";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
 import { ToastProvider } from "./contexts/ToastContext";
+import { MiniViewerProvider } from "./contexts/MiniViewerContext";
 import CookieConsent from "./components/CookieConsent";
 import { usePageTracking } from "./hooks/usePageTracking";
 
@@ -50,7 +51,8 @@ const queryClient = new QueryClient({
 function RoutedApp() {
   usePageTracking();
   return (
-    <Routes>
+    <MiniViewerProvider>
+      <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<TodayPage />} />
         <Route path="scoreboard" element={<ScoreboardPage />} />
@@ -80,6 +82,7 @@ function RoutedApp() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
+    </MiniViewerProvider>
   );
 }
 

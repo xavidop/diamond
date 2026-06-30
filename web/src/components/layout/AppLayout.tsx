@@ -3,8 +3,10 @@ import {
   CalendarDays, Trophy, Shield, Flame, TerminalSquare, Search,
   Activity, Home, GitCompare, History, Layers, Star, Sun, Moon,
   Eye, X, Award, ArrowLeftRight, MapPin, Keyboard, Zap, Crown,
-  Users, BookOpen, LayoutGrid, Sparkles, Info, Newspaper,
+  Users, BookOpen, LayoutGrid, Sparkles, Info, Newspaper, Tv,
 } from "lucide-react";
+import { useMiniViewer } from "../../contexts/MiniViewerContext";
+import MiniViewer from "../miniviewer/MiniViewer";
 import { cn } from "../../lib/utils";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSport } from "../../contexts/SportContext";
@@ -143,6 +145,7 @@ export default function AppLayout() {
               <Search size={14} />
             </button>
             <NotificationsBell />
+            <MiniButton />
             <button
               onClick={() => setDrawerOpen(true)}
               className="btn p-2 min-h-[40px] min-w-[40px] justify-center"
@@ -201,6 +204,7 @@ export default function AppLayout() {
       <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
       <NotificationsRunner />
       <ToastViewport />
+      <MiniViewer />
     </div>
   );
 }
@@ -341,6 +345,7 @@ function SidebarContent({
           >
             {theme === "dark" ? <Sun size={12} /> : <Moon size={12} />}
           </button>
+          <MiniButton />
           <NotificationsBell placement="top" />
         </div>
         <p className="px-0.5 text-[10px] leading-relaxed text-white/30">
@@ -368,5 +373,19 @@ function NavGroup({ label, children }: { label: string; children: React.ReactNod
       </div>
       {children}
     </div>
+  );
+}
+
+function MiniButton() {
+  const { openMini } = useMiniViewer();
+  return (
+    <button
+      onClick={() => openMini()}
+      className="btn p-1.5"
+      title="Mini scoreboard (pop-out)"
+      aria-label="Open mini scoreboard"
+    >
+      <Tv size={12} />
+    </button>
   );
 }

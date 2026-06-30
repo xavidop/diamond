@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
+import { Tv } from "lucide-react";
 import { api, playerHeadshotUrl, teamLogoUrl } from "../api/mlb";
 import {
   Card,
@@ -7,6 +8,7 @@ import {
   SectionTitle,
   Spinner,
 } from "../components/ui/Primitives";
+import { useMiniViewer } from "../contexts/MiniViewerContext";
 import PitchZone from "../components/ui/PitchZone";
 import SprayChart from "../components/ui/SprayChart";
 import WinProbability from "../components/ui/WinProbability";
@@ -19,6 +21,7 @@ import { cn } from "../lib/utils";
 export default function GamePage() {
   const { gamePk } = useParams<{ gamePk: string }>();
   const id = gamePk!;
+  const { openMini } = useMiniViewer();
 
   const live = useQuery({
     queryKey: ["game-live", id],
@@ -75,6 +78,13 @@ export default function GamePage() {
             />
           </div>
           <TeamBlock team={home} score={homeScore} align="right" />
+          <button
+            onClick={() => openMini(Number(id))}
+            className="btn btn-accent"
+            title="Open this game in the mini viewer"
+          >
+            <Tv size={14} /> Pop out
+          </button>
         </div>
       </Card>
 

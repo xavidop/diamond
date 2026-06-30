@@ -212,6 +212,19 @@
   html.light .nav-item { @apply text-pitch-700 hover:text-pitch-900 hover:bg-black/[0.06]; }
   html.light .nav-item-active { @apply text-[#5a6800] bg-[#5a6800]/10; }
 
+  /* Mini viewer (.diamond-mini): its white-based borders, row dividers and the
+     selected-row tint are invisible on the light chrome surface, leaving the
+     panel flat. Give them dark equivalents so it keeps the same structure it
+     has in dark mode. Scoped to .diamond-mini so the sidebar is untouched. */
+  /* The mini root carries `text-white` on the SAME element as .diamond-chrome,
+     so the descendant rule `.diamond-chrome .text-white` can't reach it and the
+     inherited text (team abbreviations, scores) stays white-on-cream. Set the
+     root color directly; descendants with their own color class keep it. */
+  html.light .diamond-mini { color: #13131e !important; }
+  html.light .diamond-mini [class*="border-white/"] { border-color: rgba(0,0,0,0.1) !important; }
+  html.light .diamond-mini [class*="divide-white/"] > :not([hidden]) ~ :not([hidden]) { border-color: rgba(0,0,0,0.08) !important; }
+  html.light .diamond-mini [class~="bg-white/10"] { background-color: rgba(0,0,0,0.07) !important; }
+
   /* DiamondGPT assistant bubble: prose-invert assumes a dark surface, so in
      light mode its body/heading/strong/link/code colors stay light and wash
      out on the cream bubble. Flip them to dark; !important beats the
