@@ -49,35 +49,45 @@ export default function GamePage() {
 
   const awayScore = linescore?.teams?.away?.runs;
   const homeScore = linescore?.teams?.home?.runs;
+  const isLive = game?.status?.abstractGameState === "Live";
 
   return (
     <div className="space-y-6">
       <Card>
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-6">
           <TeamBlock team={away} score={awayScore} />
-          <div className="flex flex-col items-center text-center">
-            <div className="text-xs uppercase tracking-wider text-pitch-300/70">
-              {game?.status?.detailedState}
+
+          <div className="flex flex-col items-center gap-2 border-t border-white/10 pt-4 text-center md:border-0 md:pt-0">
+            <div className="flex items-center gap-1.5 font-display text-[11px] font-bold uppercase tracking-[0.18em] text-pitch-300/70">
+              {isLive && (
+                <span className="h-[5px] w-[5px] shrink-0 animate-pulse rounded-full bg-volt-500 motion-reduce:animate-none" />
+              )}
+              {game?.status?.detailedState ?? "—"}
             </div>
-            <div className="text-2xl font-bold">
+            <div className="font-display text-3xl font-bold uppercase leading-none tracking-tight">
+              {linescore?.inningState ? `${linescore.inningState} ` : ""}
               {linescore?.currentInningOrdinal ?? "—"}
             </div>
-            <div className="text-xs text-pitch-300/70">
-              {linescore?.inningState}
-            </div>
-            <div className="mt-2 flex items-center gap-3 justify-center text-xs text-pitch-300/80">
+            <div className="flex items-center justify-center gap-3 font-mono text-xs tabular-nums text-pitch-300/80">
               <span>B {linescore?.balls ?? 0}</span>
               <span>S {linescore?.strikes ?? 0}</span>
               <span>O {linescore?.outs ?? 0}</span>
             </div>
             <NotifyButton
               variant="button"
-              className="mt-3"
+              className="mt-1"
               gamePk={Number(id)}
               label={`${away?.teamName ?? "Away"} @ ${home?.teamName ?? "Home"}`}
             />
           </div>
-          <TeamBlock team={home} score={homeScore} align="right" />
+
+          <TeamBlock
+            team={home}
+            score={homeScore}
+            align="right"
+            className="border-t border-white/10 pt-4 md:border-0 md:pt-0"
+          />
+
           <button
             onClick={() => openMini(Number(id))}
             className="btn btn-accent hidden lg:inline-flex"
@@ -134,31 +144,45 @@ function TeamBlock({
   team,
   score,
   align = "left",
+  className,
 }: {
   team: any;
   score?: number;
   align?: "left" | "right";
+  className?: string;
 }) {
   if (!team) return null;
   return (
     <Link
       to={`/teams/${team.id}`}
       className={cn(
-        "flex items-center gap-3",
-        align === "right" && "flex-row-reverse text-right"
+        // Mobile: full-width row — logo + name pinned left, score pinned right.
+        // Desktop: a shrink-to-fit column block (home side mirrored to the right).
+        "group flex w-full items-center gap-3 md:w-auto",
+        align === "right" && "md:flex-row-reverse md:text-right",
+        className
       )}
     >
       <img
         src={teamLogoUrl(team.id)}
         alt=""
-        className="h-16 w-16 object-contain"
+        className="h-14 w-14 shrink-0 object-contain motion-safe:transition-transform motion-safe:group-hover:scale-105 md:h-16 md:w-16"
       />
-      <div>
-        <div className="text-sm text-pitch-300/70">{team.locationName}</div>
-        <div className="text-2xl font-bold">{team.teamName}</div>
-        <div className="text-4xl font-extrabold tabular-nums">
+      <div className="min-w-0 flex-1 md:flex-none">
+        <div className="text-xs uppercase tracking-wider text-pitch-300/70">
+          {team.locationName}
+        </div>
+        <div className="truncate font-display text-3xl font-bold uppercase leading-none tracking-tight md:text-4xl">
+          {team.teamName}
+        </div>
+        {/* Desktop: score sits in the column under the name. */}
+        <div className="mt-1.5 hidden font-display text-5xl font-black tabular-nums leading-none md:block">
           {score ?? "—"}
         </div>
+      </div>
+      {/* Mobile: score is the right-hand anchor of the row. */}
+      <div className="shrink-0 font-display text-5xl font-black tabular-nums leading-none md:hidden">
+        {score ?? "—"}
       </div>
     </Link>
   );
