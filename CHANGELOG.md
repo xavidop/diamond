@@ -1,3 +1,10 @@
+## [1.10.3](https://github.com/xavidop/diamond/compare/v1.10.2...v1.10.3) (2026-07-01)
+
+
+### Bug Fixes
+
+* search page ([f6796d4](https://github.com/xavidop/diamond/commit/f6796d46d79158faa249f9995b2b5f21cd86157f))
+
 ## [1.10.2](https://github.com/xavidop/diamond/compare/v1.10.1...v1.10.2) (2026-06-30)
 
 
