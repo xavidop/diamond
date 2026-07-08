@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/xavidop/diamond/compare/v1.10.3...v1.11.0) (2026-07-08)
+
+
+### Features
+
+* bump versions ([4d4f4c3](https://github.com/xavidop/diamond/commit/4d4f4c380fa69c0844f4ad735fcd50e4574a8b09))
+
 ## [1.10.3](https://github.com/xavidop/diamond/compare/v1.10.2...v1.10.3) (2026-07-01)
 
 
