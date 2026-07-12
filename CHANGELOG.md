@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/xavidop/diamond/compare/v1.11.0...v1.12.0) (2026-07-12)
+
+
+### Features
+
+* added PWA + news reader ([e2c3709](https://github.com/xavidop/diamond/commit/e2c37091b573faf95333ea5c15bfde27721a3147))
+
 # [1.11.0](https://github.com/xavidop/diamond/compare/v1.10.3...v1.11.0) (2026-07-08)
 
 
