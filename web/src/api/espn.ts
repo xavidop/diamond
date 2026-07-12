@@ -4,6 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 const ESPN_NEWS_BASE =
   "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news";
 
+// ESPN's content API returns a story's full body (the `story` HTML field),
+// keyed by the numeric article id. Used to read articles in-app.
+const ESPN_CONTENT_BASE =
+  "https://content.core.api.espn.com/v1/sports/news/";
+
 // ESPN tags league-wide roundups (e.g. power rankings) with many/all teams.
 // A genuinely team-specific article references only its own team plus, for a
 // game story, the opponent — so we drop anything tagged with more teams.
@@ -87,6 +92,65 @@ export function useNews(opts: { espnTeamId?: number; limit?: number } = {}) {
     queryKey: ["espn-news", opts.espnTeamId ?? "all", opts.limit ?? 30],
     queryFn: () => fetchNews(opts),
     staleTime: 5 * 60_000,
+  });
+}
+
+/** A single story's full content, from ESPN's content API. */
+export type ArticleContent = {
+  id: string;
+  headline: string;
+  byline?: string;
+  description?: string;
+  published?: string;
+  /** Article body as HTML — sanitize before rendering. */
+  storyHtml: string;
+  webUrl?: string;
+  images: { url: string; caption?: string; credit?: string; alt?: string }[];
+};
+
+type EspnHeadline = {
+  headline?: string;
+  byline?: string;
+  description?: string;
+  published?: string;
+  story?: string;
+  links?: { web?: { href?: string } };
+  images?: Array<{ url?: string; caption?: string; credit?: string; alt?: string }>;
+};
+
+export async function fetchArticle(id: string): Promise<ArticleContent> {
+  const res = await fetch(`${ESPN_CONTENT_BASE}${encodeURIComponent(id)}`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) throw new Error(`ESPN article ${res.status} ${res.statusText}`);
+  const data = (await res.json()) as { headlines?: EspnHeadline[] };
+  const h = data.headlines?.[0];
+  if (!h) throw new Error("Article not found");
+  return {
+    id,
+    headline: h.headline ?? "Untitled",
+    byline: h.byline || undefined,
+    description: h.description || undefined,
+    published: h.published || undefined,
+    storyHtml: h.story ?? "",
+    webUrl: h.links?.web?.href || undefined,
+    images: (h.images ?? [])
+      .filter((i): i is { url: string } & typeof i => Boolean(i.url))
+      .map((i) => ({
+        url: i.url!,
+        caption: i.caption,
+        credit: i.credit,
+        alt: i.alt,
+      })),
+  };
+}
+
+export function useArticle(id?: string) {
+  return useQuery({
+    queryKey: ["espn-article", id],
+    queryFn: () => fetchArticle(id!),
+    enabled: !!id,
+    staleTime: 10 * 60_000,
   });
 }
 

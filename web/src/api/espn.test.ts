@@ -1,6 +1,6 @@
 // web/src/api/espn.test.ts
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { fetchNews, timeAgo } from "./espn";
+import { fetchNews, fetchArticle, timeAgo } from "./espn";
 
 const SAMPLE = {
   articles: [
@@ -95,5 +95,47 @@ describe("timeAgo", () => {
     const now = new Date();
     const fiveMinAgo = new Date(now.getTime() - 5 * 60_000).toISOString();
     expect(timeAgo(fiveMinAgo)).toMatch(/m ago|min/);
+  });
+});
+
+describe("fetchArticle", () => {
+  const CONTENT = {
+    headlines: [
+      {
+        headline: "Big win",
+        byline: "Jane Doe",
+        description: "A recap",
+        published: "2026-06-30T08:02:23Z",
+        story: "<p>The team won.</p>",
+        links: { web: { href: "https://espn.com/story" } },
+        images: [{ url: "https://img/a.png", caption: "cap" }, { url: "" }],
+      },
+    ],
+  };
+
+  it("normalizes the content API response", async () => {
+    const f = vi.fn().mockResolvedValue({ ok: true, json: async () => CONTENT });
+    vi.stubGlobal("fetch", f);
+    const out = await fetchArticle("123");
+    expect(String(f.mock.calls[0][0])).toContain("/sports/news/123");
+    expect(out).toMatchObject({
+      id: "123",
+      headline: "Big win",
+      byline: "Jane Doe",
+      description: "A recap",
+      storyHtml: "<p>The team won.</p>",
+      webUrl: "https://espn.com/story",
+    });
+    expect(out.images).toEqual([
+      { url: "https://img/a.png", caption: "cap", credit: undefined, alt: undefined },
+    ]);
+  });
+
+  it("throws when there is no headline", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ headlines: [] }) })
+    );
+    await expect(fetchArticle("1")).rejects.toThrow();
   });
 });

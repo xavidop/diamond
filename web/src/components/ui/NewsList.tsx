@@ -1,6 +1,7 @@
 import type { Article } from "../../api/espn";
 import { timeAgo } from "../../api/espn";
 import { Card, Empty, ErrorBox, Spinner } from "./Primitives";
+import { Link } from "react-router-dom";
 
 type Layout = "grid" | "list";
 
@@ -117,15 +118,24 @@ export default function NewsList({
 }
 
 function ArticleLink({ a, children }: { a: Article; children: React.ReactNode }) {
+  // Read the story in-app. Fall back to the external ESPN page when we have no
+  // id to build an in-app route (rare).
+  if (!a.id) {
+    return (
+      <a
+        href={a.webUrl || "#"}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group block"
+      >
+        {children}
+      </a>
+    );
+  }
   return (
-    <a
-      href={a.webUrl || "#"}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group block"
-    >
+    <Link to={`/news/${encodeURIComponent(a.id)}`} className="group block">
       {children}
-    </a>
+    </Link>
   );
 }
 

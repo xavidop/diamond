@@ -37,6 +37,23 @@ func TestParseArticles(t *testing.T) {
 	if len(a.TeamIDs) != 2 || a.TeamIDs[0] != 10 || a.TeamIDs[1] != 6 {
 		t.Fatalf("bad TeamIDs: %v", a.TeamIDs)
 	}
+	// no api link in the sample → APIURL falls back to the content API by id
+	if a.APIURL != contentBase+"123" {
+		t.Fatalf("bad APIURL fallback: %q", a.APIURL)
+	}
+}
+
+func TestParseArticlesAPIURL(t *testing.T) {
+	const j = `{"articles":[{"id":1,"headline":"h",
+	  "links":{"web":{"href":"https://espn.com/s"},
+	           "api":{"self":{"href":"https://content.core.api.espn.com/v1/sports/news/1"}}}}]}`
+	arts, err := parseArticles([]byte(j))
+	if err != nil {
+		t.Fatalf("parseArticles: %v", err)
+	}
+	if arts[0].APIURL != "https://content.core.api.espn.com/v1/sports/news/1" {
+		t.Fatalf("bad APIURL: %q", arts[0].APIURL)
+	}
 }
 
 func TestFilterByTeam(t *testing.T) {
@@ -46,11 +63,11 @@ func TestFilterByTeam(t *testing.T) {
 		wide = append(wide, i)
 	}
 	arts := []Article{
-		{Headline: "Yankees news", TeamIDs: []int{10}},           // keep
-		{Headline: "Yankees vs Tigers", TeamIDs: []int{10, 6}},   // keep (game)
-		{Headline: "League power rankings", TeamIDs: wide},       // drop (league-wide)
-		{Headline: "Red Sox news", TeamIDs: []int{2}},            // drop (other team)
-		{Headline: "Untagged", TeamIDs: nil},                     // drop (no team)
+		{Headline: "Yankees news", TeamIDs: []int{10}},         // keep
+		{Headline: "Yankees vs Tigers", TeamIDs: []int{10, 6}}, // keep (game)
+		{Headline: "League power rankings", TeamIDs: wide},     // drop (league-wide)
+		{Headline: "Red Sox news", TeamIDs: []int{2}},          // drop (other team)
+		{Headline: "Untagged", TeamIDs: nil},                   // drop (no team)
 	}
 	got := filterByTeam(arts, 10)
 	if len(got) != 2 {

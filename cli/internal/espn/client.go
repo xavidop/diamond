@@ -11,6 +11,10 @@ import (
 
 const BaseURL = "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb"
 
+// contentBase builds the content API URL for a story id, used as a fallback
+// when an article's links.api.self.href is missing.
+const contentBase = "https://content.core.api.espn.com/v1/sports/news/"
+
 // maxTeamsPerArticle drops league-wide roundups: ESPN tags those with many/all
 // teams, while a genuine team article references only its team (+ opponent).
 const maxTeamsPerArticle = 6
@@ -68,6 +72,45 @@ func (c *Client) News(espnTeamID string, limit int) ([]Article, error) {
 	return arts, nil
 }
 
+// ArticleContent fetches the full body of a story from ESPN's content API
+// (the URL captured in Article.APIURL). The body is HTML; callers render it.
+func (c *Client) ArticleContent(apiURL string) (ArticleContent, error) {
+	if apiURL == "" {
+		return ArticleContent{}, fmt.Errorf("article has no content URL")
+	}
+	resp, err := c.http.Get(apiURL)
+	if err != nil {
+		return ArticleContent{}, fmt.Errorf("GET %s: %w", apiURL, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return ArticleContent{}, fmt.Errorf("GET %s: status %d", apiURL, resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return ArticleContent{}, err
+	}
+	var feed espnContentFeed
+	if err := json.Unmarshal(body, &feed); err != nil {
+		return ArticleContent{}, err
+	}
+	if len(feed.Headlines) == 0 {
+		return ArticleContent{}, fmt.Errorf("no story content")
+	}
+	h := feed.Headlines[0]
+	content := ArticleContent{
+		Headline:  h.Headline,
+		Byline:    h.Byline,
+		StoryHTML: h.Story,
+	}
+	for _, img := range h.Images {
+		if img.URL != "" {
+			content.Images = append(content.Images, img.URL)
+		}
+	}
+	return content, nil
+}
+
 // filterByTeam keeps articles that reference teamID and are not league-wide
 // roundups (which ESPN tags with many teams).
 func filterByTeam(arts []Article, teamID int) []Article {
@@ -99,9 +142,13 @@ func parseArticles(raw []byte) ([]Article, error) {
 			Description: a.Description,
 			Type:        a.Type,
 			WebURL:      a.Links.Web.Href,
+			APIURL:      a.Links.API.Self.Href,
 		}
 		if art.Type == "" {
 			art.Type = "Story"
+		}
+		if art.APIURL == "" && art.ID != "" {
+			art.APIURL = contentBase + art.ID
 		}
 		if len(a.Images) > 0 {
 			art.ImageURL = a.Images[0].URL

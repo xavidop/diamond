@@ -92,6 +92,11 @@ type TeamModel struct {
 	teamNews       []espn.Article
 	teamNewsLoaded bool
 	newsCursor     int
+
+	// in-app article reader (news tab)
+	readingArticle bool
+	reader         ArticleReader
+	height         int
 }
 
 func NewTeamModel(sport mlb.Sport, query ...string) TeamModel {
@@ -124,9 +129,22 @@ func (m TeamModel) Init() tea.Cmd {
 func (m TeamModel) CapturesText() bool { return m.state == teamStateSearch }
 
 func (m TeamModel) Update(msg tea.Msg) (TeamModel, tea.Cmd) {
+	// While reading an article in the News tab, route everything to the reader.
+	if m.readingArticle {
+		if sz, ok := msg.(tea.WindowSizeMsg); ok {
+			m.width, m.height = sz.Width, sz.Height
+		}
+		var cmd tea.Cmd
+		m.reader, cmd = m.reader.Update(msg)
+		if m.reader.done {
+			m.readingArticle = false
+		}
+		return m, cmd
+	}
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
+		m.height = msg.Height
 		return m, nil
 	case teamsLoadedMsg:
 		m.teams = msg.teams
@@ -233,7 +251,9 @@ func (m TeamModel) Update(msg tea.Msg) (TeamModel, tea.Cmd) {
 					return m, m.loadPlayer(m.rosterOrder[m.rosterCursor].Person.ID)
 				}
 				if m.tab == 6 && m.newsCursor < len(m.teamNews) {
-					return m, openURL(m.teamNews[m.newsCursor].WebURL)
+					m.reader = NewArticleReader(m.teamNews[m.newsCursor], m.width, m.height)
+					m.readingArticle = true
+					return m, m.reader.Init()
 				}
 			case "esc":
 				m.state = teamStateSearch
@@ -457,6 +477,9 @@ func statStr(s map[string]interface{}, key string) string {
 }
 
 func (m TeamModel) View() string {
+	if m.readingArticle {
+		return m.reader.View()
+	}
 	if m.err != nil {
 		return StyleError.Render("Error: "+m.err.Error()) + "\n" + HelpBar("esc back")
 	}
@@ -542,7 +565,7 @@ func (m TeamModel) View() string {
 		help = HelpBar("↑/↓ select player", "Enter stats", "Tab/⇧Tab change view", "f favorite", "esc back")
 	}
 	if m.tab == 6 {
-		help = HelpBar("↑/↓ select", "Enter open in browser", "Tab/⇧Tab change view", "esc back")
+		help = HelpBar("↑/↓ select", "Enter read", "Tab/⇧Tab change view", "esc back")
 	}
 	return header + "\n" + tabs + "\n\n" + body + "\n" + help
 }
@@ -752,7 +775,7 @@ func (m TeamModel) renderTeamTransactions() string {
 }
 
 // renderTeamNews lists this team's latest ESPN headlines; the cursor row is
-// highlighted and Enter opens it in the browser.
+// highlighted and Enter opens the story in the in-app reader.
 func (m TeamModel) renderTeamNews() string {
 	if m.team == nil {
 		return StyleDim.Render("  News not available for this team.")

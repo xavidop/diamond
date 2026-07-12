@@ -28,6 +28,7 @@ const SearchPage = lazy(() => import("./pages/SearchPage"));
 const FavoritesPage = lazy(() => import("./pages/FavoritesPage"));
 const StreaksPage = lazy(() => import("./pages/StreaksPage"));
 const NewsPage = lazy(() => import("./pages/NewsPage"));
+const ArticlePage = lazy(() => import("./pages/ArticlePage"));
 const TransactionsPage = lazy(() => import("./pages/TransactionsPage"));
 const AwardsPage = lazy(() => import("./pages/AwardsPage"));
 const VenuesPage = lazy(() => import("./pages/VenuesPage"));
@@ -64,6 +65,7 @@ function RoutedApp() {
         <Route path="leaders" element={<LeadersPage />} />
         <Route path="streaks" element={<StreaksPage />} />
         <Route path="news" element={<NewsPage />} />
+        <Route path="news/:id" element={<ArticlePage />} />
         <Route path="compare" element={<ComparePage />} />
         <Route path="team-compare" element={<TeamComparePage />} />
         <Route path="postseason" element={<PostseasonPage />} />

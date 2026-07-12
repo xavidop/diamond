@@ -18,6 +18,10 @@ type NewsModel struct {
 	loading bool
 	err     error
 	width   int
+	height  int
+	// in-app article reader
+	reading bool
+	reader  ArticleReader
 }
 
 func NewNewsModel(sport mlb.Sport) NewsModel {
@@ -41,9 +45,20 @@ func (m NewsModel) fetch() tea.Cmd {
 }
 
 func (m NewsModel) Update(msg tea.Msg) (NewsModel, tea.Cmd) {
+	if sz, ok := msg.(tea.WindowSizeMsg); ok {
+		m.width, m.height = sz.Width, sz.Height
+	}
+	// While reading an article, route everything to the reader.
+	if m.reading {
+		var cmd tea.Cmd
+		m.reader, cmd = m.reader.Update(msg)
+		if m.reader.done {
+			m.reading = false
+		}
+		return m, cmd
+	}
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
 		return m, nil
 	case newsLoadedMsg:
 		m.loading, m.news, m.cursor = false, msg.news, 0
@@ -63,7 +78,9 @@ func (m NewsModel) Update(msg tea.Msg) (NewsModel, tea.Cmd) {
 			}
 		case "enter":
 			if m.cursor < len(m.news) {
-				return m, openURL(m.news[m.cursor].WebURL)
+				m.reader = NewArticleReader(m.news[m.cursor], m.width, m.height)
+				m.reading = true
+				return m, m.reader.Init()
 			}
 		case "r":
 			m.loading = true
@@ -76,8 +93,11 @@ func (m NewsModel) Update(msg tea.Msg) (NewsModel, tea.Cmd) {
 }
 
 func (m NewsModel) View() string {
+	if m.reading {
+		return m.reader.View()
+	}
 	head := PanelHeader("NEWS", m.width) + "\n\n"
-	help := HelpBar("↑/↓ select", "Enter open in browser", "r refresh", "esc back")
+	help := HelpBar("↑/↓ select", "Enter read", "r refresh", "esc back")
 
 	if m.err != nil {
 		return StyleError.Render("Error: "+m.err.Error()) + "\n" + HelpBar("r retry", "esc back")

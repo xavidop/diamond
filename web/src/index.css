@@ -252,6 +252,17 @@
   html.light .diamond-app-root main .dgpt-bubble :is(strong, h1, h2, h3, h4) { color: #13131e !important; }
   html.light .diamond-app-root main .dgpt-bubble :is(a, code) { color: #5a6800 !important; }
   html.light .diamond-app-root main .dgpt-bubble :is(hr, th, td) { border-color: rgba(0, 0, 0, 0.12) !important; }
+
+  /* News article reader: same story as the DiamondGPT bubble — prose-invert
+     colors are built for a dark surface and wash out on the light page. Flip
+     the body/heading/strong/link/border colors to dark equivalents. */
+  html.light .diamond-app-root main .article-body,
+  html.light .diamond-app-root main .article-body :is(p, li, td, th, blockquote, figcaption) {
+    color: #1f1f2e !important;
+  }
+  html.light .diamond-app-root main .article-body :is(strong, h1, h2, h3, h4, h5, h6) { color: #13131e !important; }
+  html.light .diamond-app-root main .article-body a { color: #5a6800 !important; }
+  html.light .diamond-app-root main .article-body :is(hr, th, td) { border-color: rgba(0, 0, 0, 0.12) !important; }
 }
 
 /* Scrollbars (WebKit) */

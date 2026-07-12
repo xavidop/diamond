@@ -23,6 +23,7 @@ import { todayIso } from "../../lib/utils";
 import ToastViewport from "../ui/ToastViewport";
 import { useNotificationPoller } from "../../hooks/useNotificationPoller";
 import NotificationsBell from "./NotificationsBell";
+import InstallPrompt from "../InstallPrompt";
 
 const MAIN_NAV = [
   { to: "/",            label: "Today",      icon: Home,        end: true  },
@@ -204,6 +205,7 @@ export default function AppLayout() {
       <NotificationsRunner />
       <ToastViewport />
       <MiniViewer />
+      <InstallPrompt />
     </div>
   );
 }

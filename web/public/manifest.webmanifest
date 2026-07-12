@@ -1,0 +1,27 @@
+{
+  "name": "Diamond · MLB Stats Platform",
+  "short_name": "Diamond",
+  "description": "A top-tier explorer for the MLB Stats API — scores, standings, players, teams and news.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0c0c16",
+  "theme_color": "#0c0c16",
+  "categories": ["sports", "news"],
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
