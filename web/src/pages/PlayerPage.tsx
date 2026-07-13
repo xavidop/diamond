@@ -11,6 +11,7 @@ import FavButton from "../components/ui/FavButton";
 import VsPlayer from "../components/ui/VsPlayer";
 import Splits from "../components/ui/Splits";
 import StatcastCard from "../components/ui/StatcastCard";
+import PromotionTrail from "../components/ui/PromotionTrail";
 import GameLog from "../components/ui/GameLog";
 import PitchArsenal from "../components/ui/PitchArsenal";
 import {
@@ -201,6 +202,8 @@ export default function PlayerPage() {
           />
         </>
       )}
+
+      <PromotionTrail personId={id} isPitcher={isPitcher} />
 
       <StatcastCard
         personId={id}

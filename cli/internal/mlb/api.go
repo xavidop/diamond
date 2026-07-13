@@ -104,6 +104,19 @@ func (c *Client) Teams(sportID int) ([]Team, error) {
 	return resp.Teams, nil
 }
 
+// TeamAffiliates returns a club's minor-league affiliates, filtered to real
+// playing levels (AAA→Rookie) and sorted by level.
+func (c *Client) TeamAffiliates(teamID int, season string) ([]Team, error) {
+	url := fmt.Sprintf("%s/teams/%d/affiliates?season=%s", c.v1, teamID, season)
+	var resp struct {
+		Teams []Team `json:"teams"`
+	}
+	if err := c.get(url, &resp); err != nil {
+		return nil, err
+	}
+	return FilterAffiliates(resp.Teams), nil
+}
+
 func (c *Client) TeamRoster(teamID int) ([]RosterPlayer, error) {
 	url := fmt.Sprintf("%s/teams/%d/roster/active", c.v1, teamID)
 	var resp struct {

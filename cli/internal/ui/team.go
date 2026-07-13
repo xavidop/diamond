@@ -40,6 +40,7 @@ type teamPlayerLoadedMsg struct {
 type teamGameLogLoadedMsg struct{ games []GameResult }
 type teamTxnsLoadedMsg struct{ txns []mlb.Transaction }
 type teamNewsLoadedMsg struct{ news []espn.Article }
+type teamAffiliatesLoadedMsg struct{ affiliates []mlb.Team }
 
 type teamViewState int
 
@@ -49,7 +50,7 @@ const (
 	teamStatePlayer
 )
 
-var teamTabNames = []string{"Roster", "Hitting", "Pitching", "Depth", "Game Log", "Transactions", "News"}
+var teamTabNames = []string{"Roster", "Hitting", "Pitching", "Depth", "Game Log", "Transactions", "News", "Farm"}
 
 type TeamModel struct {
 	sport    mlb.Sport
@@ -92,6 +93,11 @@ type TeamModel struct {
 	teamNews       []espn.Article
 	teamNewsLoaded bool
 	newsCursor     int
+
+	// farm tab
+	affiliates       []mlb.Team
+	affiliatesLoaded bool
+	farmCursor       int
 
 	// in-app article reader (news tab)
 	readingArticle bool
@@ -176,6 +182,11 @@ func (m TeamModel) Update(msg tea.Msg) (TeamModel, tea.Cmd) {
 		m.teamNews = msg.news
 		m.teamNewsLoaded = true
 		return m, nil
+	case teamAffiliatesLoadedMsg:
+		m.affiliates = msg.affiliates
+		m.affiliatesLoaded = true
+		m.farmCursor = 0
+		return m, nil
 	case ErrMsg:
 		m.loading = false
 		m.playerLoading = false
@@ -204,6 +215,7 @@ func (m TeamModel) Update(msg tea.Msg) (TeamModel, tea.Cmd) {
 					m.teamGames, m.teamGamesLoaded = nil, false
 					m.teamTxns, m.teamTxnsLoaded = nil, false
 					m.teamNews, m.teamNewsLoaded, m.newsCursor = nil, false, 0
+					m.affiliates, m.affiliatesLoaded, m.farmCursor = nil, false, 0
 					return m, m.loadTeamDetail(t.ID)
 				}
 			case "esc":
@@ -236,12 +248,18 @@ func (m TeamModel) Update(msg tea.Msg) (TeamModel, tea.Cmd) {
 				if m.tab == 6 && m.newsCursor > 0 {
 					m.newsCursor--
 				}
+				if m.tab == 7 && m.farmCursor > 0 {
+					m.farmCursor--
+				}
 			case "down", "j":
 				if m.tab == 0 && m.rosterCursor < len(m.rosterOrder)-1 {
 					m.rosterCursor++
 				}
 				if m.tab == 6 && m.newsCursor < len(m.teamNews)-1 {
 					m.newsCursor++
+				}
+				if m.tab == 7 && m.farmCursor < len(m.affiliates)-1 {
+					m.farmCursor++
 				}
 			case "enter":
 				if m.tab == 0 && m.rosterCursor < len(m.rosterOrder) {
@@ -254,6 +272,27 @@ func (m TeamModel) Update(msg tea.Msg) (TeamModel, tea.Cmd) {
 					m.reader = NewArticleReader(m.teamNews[m.newsCursor], m.width, m.height)
 					m.readingArticle = true
 					return m, m.reader.Init()
+				}
+				if m.tab == 7 {
+					var target *mlb.Team
+					if len(m.affiliates) > 0 && m.farmCursor < len(m.affiliates) {
+						t := m.affiliates[m.farmCursor]
+						target = &t
+					} else if m.team != nil && m.team.ParentOrgID != 0 {
+						target = &mlb.Team{ID: m.team.ParentOrgID, Name: m.team.ParentOrgName}
+					}
+					if target != nil {
+						m.team = target
+						m.tab = 0
+						m.loading = true
+						m.roster, m.hitting, m.pitching = nil, nil, nil
+						m.rosterOrder, m.rosterCursor = nil, 0
+						m.teamGames, m.teamGamesLoaded = nil, false
+						m.teamTxns, m.teamTxnsLoaded = nil, false
+						m.teamNews, m.teamNewsLoaded, m.newsCursor = nil, false, 0
+						m.affiliates, m.affiliatesLoaded, m.farmCursor = nil, false, 0
+						return m, m.loadTeamDetail(target.ID)
+					}
 				}
 			case "esc":
 				m.state = teamStateSearch
@@ -367,8 +406,27 @@ func (m *TeamModel) onTeamTabChange() tea.Cmd {
 		if !m.teamNewsLoaded && m.team != nil {
 			return m.loadTeamNews(m.team.ID)
 		}
+	case 7:
+		// Only top-level clubs (parentOrgId == 0) have a farm system to fetch;
+		// minor clubs just link back to their parent org.
+		if !m.affiliatesLoaded && m.team != nil && m.team.ParentOrgID == 0 {
+			return m.loadTeamAffiliates(m.team.ID)
+		}
 	}
 	return nil
+}
+
+// loadTeamAffiliates fetches a club's minor-league affiliates (best-effort).
+func (m TeamModel) loadTeamAffiliates(teamID int) tea.Cmd {
+	c := m.client
+	season := fmt.Sprintf("%d", time.Now().Year())
+	return func() tea.Msg {
+		affs, err := c.TeamAffiliates(teamID, season)
+		if err != nil {
+			return teamAffiliatesLoadedMsg{affiliates: nil}
+		}
+		return teamAffiliatesLoadedMsg{affiliates: affs}
+	}
 }
 
 // loadTeamTransactions fetches this team's roster moves for the season to date.
@@ -558,6 +616,8 @@ func (m TeamModel) View() string {
 		body = m.renderTeamTransactions()
 	case 6:
 		body = m.renderTeamNews()
+	case 7:
+		body = m.renderFarm()
 	}
 
 	help := HelpBar("Tab/⇧Tab change view", "f favorite", "esc back")
@@ -567,7 +627,42 @@ func (m TeamModel) View() string {
 	if m.tab == 6 {
 		help = HelpBar("↑/↓ select", "Enter read", "Tab/⇧Tab change view", "esc back")
 	}
+	if m.tab == 7 {
+		help = HelpBar("↑/↓ select", "Enter open", "Tab/⇧Tab change view", "esc back")
+	}
 	return header + "\n" + tabs + "\n\n" + body + "\n" + help
+}
+
+// renderFarm shows a top-level club's minor-league affiliates (selectable), or a
+// minor club's link back to its parent organization.
+func (m TeamModel) renderFarm() string {
+	if m.team == nil {
+		return StyleDim.Render("  No affiliate data.")
+	}
+	if m.team.ParentOrgID != 0 {
+		return "  " + StyleDim.Render("Affiliate of ") +
+			StyleAccent.Bold(true).Render(m.team.ParentOrgName) + "\n\n" +
+			StyleDim.Render("  Enter: open organization")
+	}
+	if !m.affiliatesLoaded {
+		return loadingView("Loading farm system…")
+	}
+	if len(m.affiliates) == 0 {
+		return StyleDim.Render("  No affiliate data.")
+	}
+	var b strings.Builder
+	b.WriteString(StyleAccent.Bold(true).Render("  FARM SYSTEM") + "\n\n")
+	for i, a := range m.affiliates {
+		lvl := mlb.AffiliateLevels[a.Sport.ID].Label
+		line := fmt.Sprintf("%-7s %s", lvl, a.Name)
+		if i == m.farmCursor {
+			b.WriteString(StyleAccent.Bold(true).Render("▸ "+line) + "\n")
+		} else {
+			b.WriteString("  " + line + "\n")
+		}
+	}
+	b.WriteString("\n" + StyleDim.Render("  ↑/↓ select · Enter open affiliate"))
+	return b.String()
 }
 
 // positionCategory buckets a position abbreviation into a roster group.

@@ -24,6 +24,7 @@ type playerDetailMsg struct {
 	splits      []mlb.SplitLine
 	expected    *mlb.ExpectedStats
 	percentiles savant.Result
+	trail       []mlb.TrailRow
 }
 type vsSearchMsg struct{ results []mlb.SearchResult }
 type vsLoadedMsg struct{ splits []mlb.StatSplit }
@@ -57,6 +58,7 @@ type PlayerModel struct {
 	// Statcast (Overview tab)
 	expected    *mlb.ExpectedStats
 	percentiles savant.Result
+	trail       []mlb.TrailRow
 
 	// Vs tab sub-state
 	vsSearch   SearchInput
@@ -206,9 +208,10 @@ func (m PlayerModel) loadDetail(id int) tea.Cmd {
 			pctKind = "pitcher"
 		}
 		percentiles := savant.Fetch(id, pctKind, time.Now().Year())
+		trail, _ := c.PlayerTrail(id, group)
 		return playerDetailMsg{
 			player: p, log: log, splits: splits,
-			expected: expected, percentiles: percentiles,
+			expected: expected, percentiles: percentiles, trail: trail,
 		}
 	}
 }
@@ -249,6 +252,7 @@ func (m PlayerModel) Update(msg tea.Msg) (PlayerModel, tea.Cmd) {
 		m.splits = msg.splits
 		m.expected = msg.expected
 		m.percentiles = msg.percentiles
+		m.trail = msg.trail
 		return m, nil
 
 	case vsSearchMsg:
@@ -494,7 +498,7 @@ func (m PlayerModel) View() string {
 	tabName := tabs[m.tab]
 	switch tabName {
 	case "Overview":
-		body = renderPlayerOverview(p, m.gameLog) + m.renderStatcast()
+		body = renderPlayerOverview(p, m.gameLog) + m.renderStatcast() + m.renderTrail()
 	case "Splits":
 		if s := renderSplits(m.splits, isPitcher); s != "" {
 			body = StyleAccent.Bold(true).Render("  SPLITS") + "  " +
@@ -625,6 +629,59 @@ func percentileBar(v int) string {
 	}
 	bar := strings.Repeat("█", filled) + strings.Repeat("░", width-filled)
 	return lipgloss.NewStyle().Foreground(col).Render(bar)
+}
+
+// renderTrail renders the Overview-tab "Career Path" — a player's climb across
+// levels (Rookie→MLB). Shown only when the player has minor-league rows;
+// MLB-only players are already covered by the Years tab.
+func (m PlayerModel) renderTrail() string {
+	if !mlb.HasMinors(m.trail) {
+		return ""
+	}
+	isPitcher := m.player != nil && m.player.PrimaryPosition.Code == "1"
+	var b strings.Builder
+	b.WriteString("\n\n  " + StyleAccent.Bold(true).Render("CAREER PATH") + "  " +
+		StyleDim.Render("Rookie → MLB") + "\n")
+	if isPitcher {
+		b.WriteString(StyleHeader.Render(fmt.Sprintf("  %-6s %-7s %-20s %-4s %-6s %-5s %-6s",
+			"SEASON", "LEVEL", "TEAM", "G", "ERA", "SO", "WHIP")) + "\n")
+	} else {
+		b.WriteString(StyleHeader.Render(fmt.Sprintf("  %-6s %-7s %-20s %-4s %-6s %-4s %-6s",
+			"SEASON", "LEVEL", "TEAM", "G", "AVG", "HR", "OPS")) + "\n")
+	}
+	for _, r := range m.trail {
+		team := truncate(r.Team, 20)
+		if isPitcher {
+			b.WriteString(fmt.Sprintf("  %-6s %-7s %-20s %-4s %-6s %-5s %-6s\n",
+				r.Season, r.Level, team,
+				trailStr(r.Stat, "gamesPlayed"), trailStr(r.Stat, "era"),
+				trailStr(r.Stat, "strikeOuts"), trailStr(r.Stat, "whip")))
+		} else {
+			b.WriteString(fmt.Sprintf("  %-6s %-7s %-20s %-4s %-6s %-4s %-6s\n",
+				r.Season, r.Level, team,
+				trailStr(r.Stat, "gamesPlayed"), trailStr(r.Stat, "avg"),
+				trailStr(r.Stat, "homeRuns"), trailStr(r.Stat, "ops")))
+		}
+	}
+	return b.String()
+}
+
+// trailStr coerces a stat value (JSON string or number) to a display string.
+func trailStr(s map[string]interface{}, key string) string {
+	v, ok := s[key]
+	if !ok {
+		return "—"
+	}
+	switch x := v.(type) {
+	case string:
+		return x
+	case float64:
+		if x == float64(int64(x)) {
+			return fmt.Sprintf("%d", int64(x))
+		}
+		return fmt.Sprintf("%.3f", x)
+	}
+	return "—"
 }
 
 // renderPlayerOverview renders the name / bio / season-card / recent-games

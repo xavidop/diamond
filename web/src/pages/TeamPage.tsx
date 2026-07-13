@@ -9,6 +9,7 @@ import {
 } from "../components/ui/Primitives";
 import FavButton from "../components/ui/FavButton";
 import TeamGameLog from "../components/ui/TeamGameLog";
+import FarmSystem from "../components/ui/FarmSystem";
 import DepthChart from "../components/ui/DepthChart";
 import TeamTransactions from "../components/ui/TeamTransactions";
 import NewsList from "../components/ui/NewsList";
@@ -112,6 +113,8 @@ export default function TeamPage() {
       </Card>
 
       <TeamGameLog teamId={t.id} season={new Date().getFullYear()} />
+
+      <FarmSystem team={t} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2 space-y-6">

@@ -36,6 +36,24 @@ type Team struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
 	} `json:"division"`
+	Sport struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"sport"`
+	ParentOrgID   int    `json:"parentOrgId"`
+	ParentOrgName string `json:"parentOrgName"`
+}
+
+// AffiliateLevels maps minor-league sport IDs to display labels + AAA→Rookie order.
+var AffiliateLevels = map[int]struct {
+	Label string
+	Order int
+}{
+	11: {"AAA", 1},
+	12: {"AA", 2},
+	13: {"A+", 3},
+	14: {"A", 4},
+	16: {"Rookie", 5},
 }
 
 type TeamGameInfo struct {

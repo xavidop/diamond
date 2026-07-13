@@ -89,6 +89,10 @@ export const api = {
       ...params,
     }),
 
+  // Farm system: a club's minor-league affiliates (and parentOrg linkage).
+  teamAffiliates: (teamId: number | string, season: number | string) =>
+    mlbFetch<any>(`/teams/${teamId}/affiliates`, { season }),
+
   teamStats: (teamId: number | string, params: QueryParams = {}) =>
     mlbFetch<any>(`/teams/${teamId}/stats`, {
       stats: "season",
@@ -197,6 +201,20 @@ export const api = {
       stats: "gameLog",
       group,
       season: season ?? new Date().getFullYear(),
+    }),
+
+  // Promotion trail: yearByYear stats at a specific level (sportId). Fanned out
+  // per level because a comma-list of sportIds does not combine server-side.
+  personStatsAtLevel: (
+    personId: number | string,
+    group: "hitting" | "pitching",
+    sportId: number
+  ) =>
+    mlbFetch<any>(`/people/${personId}/stats`, {
+      stats: "yearByYear",
+      group,
+      sportId,
+      hydrate: "team(sport)",
     }),
 
   // Statcast expected statistics (xBA/xSLG/xwOBA under ordinary stat names)
