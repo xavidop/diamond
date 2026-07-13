@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/xavidop/diamond/cli/internal/fav"
 	"github.com/xavidop/diamond/cli/internal/mlb"
+	"github.com/xavidop/diamond/cli/internal/savant"
 )
 
 type recentPlaysMsg struct {
@@ -18,9 +19,11 @@ type recentPlaysMsg struct {
 
 type playerSearchResultMsg struct{ results []mlb.SearchResult }
 type playerDetailMsg struct {
-	player *mlb.Player
-	log    []mlb.StatSplit
-	splits []mlb.SplitLine
+	player      *mlb.Player
+	log         []mlb.StatSplit
+	splits      []mlb.SplitLine
+	expected    *mlb.ExpectedStats
+	percentiles savant.Result
 }
 type vsSearchMsg struct{ results []mlb.SearchResult }
 type vsLoadedMsg struct{ splits []mlb.StatSplit }
@@ -50,6 +53,10 @@ type PlayerModel struct {
 	detailID     int  // player id to load in Init when opened by id
 	tab          int  // active detail tab index
 	tabEnteredAt int  // animFrame when current tab was entered
+
+	// Statcast (Overview tab)
+	expected    *mlb.ExpectedStats
+	percentiles savant.Result
 
 	// Vs tab sub-state
 	vsSearch   SearchInput
@@ -192,7 +199,17 @@ func (m PlayerModel) loadDetail(id int) tea.Cmd {
 		}
 		log, _ := c.PersonGameLog(id, group, season)
 		splits, _ := c.PersonSplits(id, group, season)
-		return playerDetailMsg{player: p, log: log, splits: splits}
+		// Statcast (best-effort — a failure here never blocks the player view).
+		expected, _ := c.PlayerExpectedStats(id, group, season)
+		pctKind := "batter"
+		if group == "pitching" {
+			pctKind = "pitcher"
+		}
+		percentiles := savant.Fetch(id, pctKind, time.Now().Year())
+		return playerDetailMsg{
+			player: p, log: log, splits: splits,
+			expected: expected, percentiles: percentiles,
+		}
 	}
 }
 
@@ -230,6 +247,8 @@ func (m PlayerModel) Update(msg tea.Msg) (PlayerModel, tea.Cmd) {
 		m.player = msg.player
 		m.gameLog = msg.log
 		m.splits = msg.splits
+		m.expected = msg.expected
+		m.percentiles = msg.percentiles
 		return m, nil
 
 	case vsSearchMsg:
@@ -475,7 +494,7 @@ func (m PlayerModel) View() string {
 	tabName := tabs[m.tab]
 	switch tabName {
 	case "Overview":
-		body = renderPlayerOverview(p, m.gameLog)
+		body = renderPlayerOverview(p, m.gameLog) + m.renderStatcast()
 	case "Splits":
 		if s := renderSplits(m.splits, isPitcher); s != "" {
 			body = StyleAccent.Bold(true).Render("  SPLITS") + "  " +
@@ -560,6 +579,52 @@ func (m PlayerModel) View() string {
 		helpExtras = append([]string{"o re-pick"}, helpExtras...)
 	}
 	return PanelHeader("PLAYERS", m.width) + "\n" + star + tabBar + "\n\n" + body + "\n" + HelpBar(helpExtras...)
+}
+
+// renderPlayerOverview renders the name / bio / season-card / recent-games
+// block (no splits, no panel header, no help bar). Used by the Overview tab
+// renderStatcast renders the Overview-tab Statcast block: expected stats
+// (official) plus Baseball Savant percentile bars (best-effort — absent when
+// the player has no Statcast data or Savant is unavailable).
+func (m PlayerModel) renderStatcast() string {
+	var b strings.Builder
+	if m.expected != nil {
+		b.WriteString("\n\n  " + StyleAccent.Bold(true).Render("STATCAST — EXPECTED") + "  " +
+			StyleDim.Render(strings.Repeat("─", 34)) + "\n")
+		b.WriteString(fmt.Sprintf("  xBA %s   xSLG %s   xwOBA %s   xwOBACON %s\n",
+			m.expected.XBA, m.expected.XSLG, m.expected.XwOBA, m.expected.XwOBACON))
+	}
+	if m.percentiles.OK && len(m.percentiles.Percentiles) > 0 {
+		b.WriteString("\n  " + StyleAccent.Bold(true).Render("STATCAST — PERCENTILES") + "  " +
+			StyleDim.Render(strings.Repeat("─", 31)) + "\n")
+		for _, p := range m.percentiles.Percentiles {
+			b.WriteString(fmt.Sprintf("  %-13s %s %3d\n", p.Label, percentileBar(p.Value), p.Value))
+		}
+	}
+	return b.String()
+}
+
+// percentileBar renders a colored 0-100 percentile bar (red low → blue high).
+func percentileBar(v int) string {
+	const width = 20
+	if v < 0 {
+		v = 0
+	}
+	if v > 100 {
+		v = 100
+	}
+	filled := v * width / 100
+	col := lipgloss.Color("#cf1019")
+	switch {
+	case v >= 75:
+		col = lipgloss.Color("#325aa8")
+	case v >= 50:
+		col = lipgloss.Color("#5a9e5a")
+	case v >= 25:
+		col = lipgloss.Color("#c9a227")
+	}
+	bar := strings.Repeat("█", filled) + strings.Repeat("░", width-filled)
+	return lipgloss.NewStyle().Foreground(col).Render(bar)
 }
 
 // renderPlayerOverview renders the name / bio / season-card / recent-games

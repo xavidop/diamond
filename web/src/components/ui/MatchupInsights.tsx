@@ -57,7 +57,9 @@ export function HeadToHead({
   endDate?: string;
   currentGamePk?: number;
 }) {
-  const yr = String(season ?? new Date().getFullYear());
+  // Derive the season from the game's own date when no season is given, so the
+  // start-of-year bound can never land after endDate (which would 400 the API).
+  const yr = String(season ?? endDate?.slice(0, 4) ?? new Date().getFullYear());
   const q = useQuery({
     queryKey: ["head-to-head", awayId, homeId, yr],
     enabled: !!awayId && !!homeId,

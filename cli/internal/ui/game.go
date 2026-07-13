@@ -25,6 +25,9 @@ type matchupLoadedMsg struct {
 
 type gameTick struct{}
 
+// contentLoadedMsg carries a game's highlight clips + recap.
+type contentLoadedMsg struct{ content *mlb.GameContent }
+
 // GameTab identifies which tab is active in the game view.
 type GameTab int
 
@@ -36,10 +39,11 @@ const (
 	GameTabWinProb
 	GameTabSpray
 	GameTabPitchZone
+	GameTabHighlights
 	GameTabInfo
 )
 
-var gameTabs = []string{"Boxscore", "Plays", "Pitching", "Matchup", "Win%", "Spray", "Pitches", "Info"}
+var gameTabs = []string{"Boxscore", "Plays", "Pitching", "Matchup", "Win%", "Spray", "Pitches", "Highlights", "Info"}
 
 // GameModel holds state for the full game detail view.
 type GameModel struct {
@@ -60,6 +64,11 @@ type GameModel struct {
 	homeGames        []mlb.Game
 	matchupRequested bool
 	matchupLoaded    bool
+
+	// Highlights tab data, fetched once when first opened.
+	content          *mlb.GameContent
+	contentRequested bool
+	hlCursor         int
 }
 
 // NewGameModel constructs a GameModel ready to fetch.
@@ -101,6 +110,19 @@ func (m GameModel) fetchMatchup(awayID, homeID int, season string) tea.Cmd {
 	}
 }
 
+// fetchContent pulls highlight clips + recap once, lazily on first tab open.
+func (m GameModel) fetchContent() tea.Cmd {
+	pk := m.gamePk
+	c := m.client
+	return func() tea.Msg {
+		content, err := c.Content(pk)
+		if err != nil {
+			return contentLoadedMsg{content: &mlb.GameContent{}}
+		}
+		return contentLoadedMsg{content: content}
+	}
+}
+
 // Update handles messages for the game view.
 func (m GameModel) Update(msg tea.Msg) (GameModel, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -139,6 +161,10 @@ func (m GameModel) Update(msg tea.Msg) (GameModel, tea.Cmd) {
 		m.matchupLoaded = true
 		return m, nil
 
+	case contentLoadedMsg:
+		m.content = msg.content
+		return m, nil
+
 	case gameTick:
 		if !m.loading {
 			m.loading = true
@@ -166,10 +192,29 @@ func (m GameModel) Update(msg tea.Msg) (GameModel, tea.Cmd) {
 			m.scroll = 0
 			m.tabAt = animFrame
 		case "j", "down":
-			m.scroll++
+			if m.tab == GameTabHighlights && m.content != nil {
+				if m.hlCursor < len(m.content.Highlights)-1 {
+					m.hlCursor++
+				}
+			} else {
+				m.scroll++
+			}
 		case "k", "up":
-			if m.scroll > 0 {
+			if m.tab == GameTabHighlights && m.content != nil {
+				if m.hlCursor > 0 {
+					m.hlCursor--
+				}
+			} else if m.scroll > 0 {
 				m.scroll--
+			}
+		case "enter":
+			if m.tab == GameTabHighlights && m.content != nil {
+				clips := m.content.Highlights
+				if m.hlCursor >= 0 && m.hlCursor < len(clips) {
+					if u := clips[m.hlCursor].VideoURL(); u != "" {
+						return m, openURL(u)
+					}
+				}
 			}
 		case "r":
 			m.err = nil
@@ -178,6 +223,11 @@ func (m GameModel) Update(msg tea.Msg) (GameModel, tea.Cmd) {
 		case "esc":
 			return m, func() tea.Msg { return NavigateMsg{View: ViewMenu} }
 		}
+	}
+	// Lazily fetch highlight content the first time the tab is opened.
+	if m.tab == GameTabHighlights && !m.contentRequested {
+		m.contentRequested = true
+		return m, m.fetchContent()
 	}
 	return m, nil
 }
@@ -242,9 +292,11 @@ func (m GameModel) View() string {
 	case GameTabWinProb:
 		body = RenderWinProb(m.probs, awayName, homeName, animProgress(m.tabAt, 14))
 	case GameTabSpray:
-		body = RenderSprayChart(m.feed.LiveData.Plays.AllPlays, animProgress(m.tabAt, 16))
+		body = m.renderStatcastSummary() + RenderSprayChart(m.feed.LiveData.Plays.AllPlays, animProgress(m.tabAt, 16))
 	case GameTabPitchZone:
 		body = RenderPitchZone(m.feed.LiveData.Plays.AllPlays)
+	case GameTabHighlights:
+		body = m.renderHighlights()
 	case GameTabInfo:
 		body = m.renderGameInfo()
 	}
@@ -261,6 +313,65 @@ func (m GameModel) View() string {
 
 	return panelHdr + "\n" + header + "\n\n" + gameInfo + "\n" + tabs + "\n\n" + body + "\n\n" +
 		HelpBar("Tab next", "j/k scroll", "r refresh", "esc back")
+}
+
+// renderStatcastSummary shows the game's hardest-hit / longest balls in play,
+// derived from the batted-ball data already in the live feed.
+func (m GameModel) renderStatcastSummary() string {
+	balls := mlb.BattedBalls(m.feed)
+	if len(balls) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(StyleHeader.Render("STATCAST") + "\n")
+	if h := mlb.HardestHit(balls); h != nil {
+		b.WriteString(fmt.Sprintf("  Hardest hit: %.1f mph (%.0f°)  %s\n", h.EV, h.Angle, truncate(h.Result, 44)))
+	}
+	if l := mlb.Longest(balls); l != nil {
+		b.WriteString(fmt.Sprintf("  Longest:     %.0f ft%s%s\n", l.Distance, strings.Repeat(" ", 12), truncate(l.Result, 44)))
+	}
+	b.WriteString(StyleDim.Render(fmt.Sprintf("  %d balls in play", len(balls))) + "\n\n")
+	return b.String()
+}
+
+// renderHighlights lists the game's highlight clips; enter opens the selected
+// clip in the browser (terminals can't play video).
+func (m GameModel) renderHighlights() string {
+	if m.content == nil {
+		return loadingView("Loading highlights…")
+	}
+	clips := m.content.Highlights
+	if len(clips) == 0 {
+		return StyleDim.Render("No highlights yet for this game.")
+	}
+	const window = 16
+	start := 0
+	if m.hlCursor >= window {
+		start = m.hlCursor - window + 1
+	}
+	end := start + window
+	if end > len(clips) {
+		end = len(clips)
+	}
+	var b strings.Builder
+	if start > 0 {
+		b.WriteString(StyleDim.Render("  ↑ more") + "\n")
+	}
+	for i := start; i < end; i++ {
+		c := clips[i]
+		dur := c.DurationSeconds()
+		label := fmt.Sprintf("%s · %d:%02d", truncate(c.Title, 60), dur/60, dur%60)
+		if i == m.hlCursor {
+			b.WriteString(StyleActiveTab.Render("▸ "+label) + "\n")
+		} else {
+			b.WriteString("  " + label + "\n")
+		}
+	}
+	if end < len(clips) {
+		b.WriteString(StyleDim.Render("  ↓ more") + "\n")
+	}
+	b.WriteString("\n" + StyleDim.Render("j/k select · enter open in browser"))
+	return b.String()
 }
 
 func (m GameModel) renderBoxscore() string {

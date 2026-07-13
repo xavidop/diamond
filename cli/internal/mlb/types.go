@@ -279,8 +279,18 @@ type HitData struct {
 		CoordX float64 `json:"coordX"`
 		CoordY float64 `json:"coordY"`
 	} `json:"coordinates"`
-	Trajectory  string  `json:"trajectory"`
-	LaunchSpeed float64 `json:"launchSpeed"`
+	Trajectory    string  `json:"trajectory"`
+	LaunchSpeed   float64 `json:"launchSpeed"`
+	LaunchAngle   float64 `json:"launchAngle"`
+	TotalDistance float64 `json:"totalDistance"`
+}
+
+// ExpectedStats holds Statcast expected values (returned under ordinary stat names).
+type ExpectedStats struct {
+	XBA      string
+	XSLG     string
+	XwOBA    string
+	XwOBACON string
 }
 
 // PitchData holds the strike-zone coordinates and speed for one pitch.

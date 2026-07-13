@@ -14,6 +14,8 @@ import SprayChart from "../components/ui/SprayChart";
 import WinProbability from "../components/ui/WinProbability";
 import GameInfo from "../components/ui/GameInfo";
 import { HeadToHead, RecentForm } from "../components/ui/MatchupInsights";
+import GameStatcast from "../components/ui/GameStatcast";
+import Highlights from "../components/ui/Highlights";
 import NotifyButton from "../components/ui/NotifyButton";
 import { useState } from "react";
 import { cn } from "../lib/utils";
@@ -104,7 +106,7 @@ export default function GamePage() {
         homeId={home?.id}
         awayName={away?.teamName}
         homeName={home?.teamName}
-        season={game?.season}
+        season={game?.game?.season}
         endDate={game?.datetime?.officialDate}
         currentGamePk={Number(id)}
       />
@@ -135,6 +137,8 @@ export default function GamePage() {
         <SectionTitle title="Spray Chart" subtitle="All batted balls plotted on the field." />
         <SprayChart gamePk={id} />
       </div>
+      <GameStatcast feed={feed} />
+      <Highlights gamePk={id} />
       <PlayByPlay plays={plays} />
     </div>
   );
@@ -407,11 +411,38 @@ function Boxscore({ box }: { box: any }) {
 }
 
 function PlayByPlay({ plays }: { plays: any[] }) {
+  const [inning, setInning] = useState<number | "all">("all");
   if (!plays?.length) return null;
-  const recent = plays.slice(-25).reverse();
+  const innings = Array.from(
+    new Set(plays.map((p) => p.about?.inning).filter((n): n is number => !!n))
+  ).sort((a, b) => a - b);
+  const recent =
+    inning === "all"
+      ? plays.slice(-25).reverse()
+      : plays.filter((p) => p.about?.inning === inning).reverse();
   return (
     <div>
-      <SectionTitle title="Play-by-Play" subtitle="Most recent 25 plays" />
+      <SectionTitle
+        title="Play-by-Play"
+        subtitle={inning === "all" ? "Most recent 25 plays" : `Inning ${inning}`}
+      />
+      <div className="mb-2 flex flex-wrap gap-1">
+        <button
+          onClick={() => setInning("all")}
+          className={cn("btn", inning === "all" && "btn-primary")}
+        >
+          All
+        </button>
+        {innings.map((n) => (
+          <button
+            key={n}
+            onClick={() => setInning(n)}
+            className={cn("btn", inning === n && "btn-primary")}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
       <Card pad={false}>
         <ul className="divide-y divide-white/5">
           {recent.map((p, i) => (

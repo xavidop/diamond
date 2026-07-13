@@ -121,6 +121,9 @@ export const api = {
   gamePlayByPlay: (gamePk: number | string) =>
     mlbFetch<any>(`/game/${gamePk}/playByPlay`),
 
+  gameContent: (gamePk: number | string) =>
+    mlbFetch<any>(`/game/${gamePk}/content`),
+
   statsLeaders: (params: QueryParams = {}) =>
     mlbFetch<any>("/stats/leaders", {
       sportId: 1,
@@ -195,6 +198,42 @@ export const api = {
       group,
       season: season ?? new Date().getFullYear(),
     }),
+
+  // Statcast expected statistics (xBA/xSLG/xwOBA under ordinary stat names)
+  personExpectedStats: (
+    personId: number | string,
+    group: "hitting" | "pitching",
+    season: number | string
+  ) =>
+    mlbFetch<any>(`/people/${personId}/stats`, {
+      stats: "expectedStatistics",
+      group,
+      season,
+    }),
+
+  // Baseball Savant percentile rankings — proxied through our backend (CORS).
+  // Best-effort: returns { ok:false } on any failure, never throws.
+  savantPercentiles: async (
+    playerId: number | string,
+    type: "batter" | "pitcher",
+    season: number | string
+  ) => {
+    try {
+      const res = await fetch(
+        `/api/savant/percentiles/${playerId}?type=${type}&season=${season}`
+      );
+      if (!res.ok) return { ok: false as const };
+      return (await res.json()) as
+        | {
+            ok: true;
+            season: number;
+            percentiles: { key: string; label: string; value: number }[];
+          }
+        | { ok: false };
+    } catch {
+      return { ok: false as const };
+    }
+  },
 
   // Postseason bracket — all postseason games for a season
   postseason: (season: number | string, sportId: number | string = 1) =>

@@ -10,6 +10,7 @@ import {
 import FavButton from "../components/ui/FavButton";
 import VsPlayer from "../components/ui/VsPlayer";
 import Splits from "../components/ui/Splits";
+import StatcastCard from "../components/ui/StatcastCard";
 import GameLog from "../components/ui/GameLog";
 import PitchArsenal from "../components/ui/PitchArsenal";
 import {
@@ -91,6 +92,22 @@ export default function PlayerPage() {
   );
 
   const isPitcher = p.primaryPosition?.code === "1";
+
+  // Current/most-recent single season — drives the Statcast expected-stats season
+  // and the actual AVG/SLG used for the expected-vs-actual delta.
+  const singleSeason = allStats.find(
+    (s) =>
+      s.type?.displayName === "statsSingleSeason" &&
+      s.group?.displayName === (isPitcher ? "pitching" : "hitting")
+  );
+  const seasonSplit = singleSeason?.splits?.[0];
+  const statcastSeason = seasonSplit?.season ?? String(new Date().getFullYear());
+  const seasonActual = seasonSplit?.stat
+    ? {
+        avg: seasonSplit.stat.avg as string | undefined,
+        slg: seasonSplit.stat.slg as string | undefined,
+      }
+    : undefined;
 
   return (
     <div className="space-y-6">
@@ -184,6 +201,13 @@ export default function PlayerPage() {
           />
         </>
       )}
+
+      <StatcastCard
+        personId={id}
+        group={isPitcher ? "pitching" : "hitting"}
+        season={statcastSeason}
+        actual={seasonActual}
+      />
 
       <div>
         <SectionTitle

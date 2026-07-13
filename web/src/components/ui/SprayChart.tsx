@@ -19,6 +19,7 @@ type Hit = {
   bb: string; // batted ball type
   ev?: number; // exit velo
   ld?: number; // launch angle
+  dist?: number; // total distance (ft)
   desc: string;
   batter: string;
   inning: number;
@@ -65,6 +66,7 @@ export default function SprayChart({
         bb: hit.trajectory ?? "unknown",
         ev: hit.launchSpeed,
         ld: hit.launchAngle,
+        dist: hit.totalDistance,
         desc: play.result?.description ?? "",
         batter: play.matchup?.batter?.fullName ?? "",
         inning: play.about?.inning ?? 0,
@@ -251,7 +253,7 @@ function Field({ hits }: { hits: Hit[] }) {
           <g key={i}>
             <title>
               {`Inn ${h.inning} · ${h.batter}\n${h.desc}${
-                h.ev ? ` (${h.ev} mph, ${h.ld}°)` : ""
+                h.ev ? ` (${h.ev} mph, ${h.ld}°${h.dist ? `, ${h.dist} ft` : ""})` : ""
               }`}
             </title>
             <circle

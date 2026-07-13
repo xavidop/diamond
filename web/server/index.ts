@@ -2,6 +2,7 @@ import express from 'express';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { PROVIDERS, resolveKey, chat } from './diamondgpt.ts';
+import { fetchPercentiles } from './savant.ts';
 
 export function createApp() {
   const app = express();
@@ -38,6 +39,13 @@ export function createApp() {
     } catch (err) {
       res.status(502).json({ error: err instanceof Error ? err.message : String(err) });
     }
+  });
+
+  app.get('/api/savant/percentiles/:playerId', async (req, res) => {
+    const type = req.query.type === 'pitcher' ? 'pitcher' : 'batter';
+    const season = Number(req.query.season) || new Date().getFullYear();
+    const result = await fetchPercentiles(req.params.playerId, type, season);
+    res.json(result); // { ok:true, ... } | { ok:false }
   });
 
   if (process.env.NODE_ENV === 'production') {

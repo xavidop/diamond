@@ -315,6 +315,55 @@ func (c *Client) Venue(venueID int) (*Venue, error) {
 	return &resp.Venues[0], nil
 }
 
+// Content fetches highlight clips + the written recap for a game.
+func (c *Client) Content(gamePk int) (*GameContent, error) {
+	url := fmt.Sprintf("%s/game/%d/content", c.v1, gamePk)
+	var resp struct {
+		Highlights struct {
+			Highlights struct {
+				Items []Highlight `json:"items"`
+			} `json:"highlights"`
+		} `json:"highlights"`
+		Editorial struct {
+			Recap struct {
+				MLB *Recap `json:"mlb"`
+			} `json:"recap"`
+		} `json:"editorial"`
+	}
+	if err := c.get(url, &resp); err != nil {
+		return nil, err
+	}
+	return &GameContent{
+		Highlights: resp.Highlights.Highlights.Items,
+		Recap:      resp.Editorial.Recap.MLB,
+	}, nil
+}
+
+// PlayerExpectedStats fetches Statcast expected statistics for a player/season.
+func (c *Client) PlayerExpectedStats(personID int, group, season string) (*ExpectedStats, error) {
+	url := fmt.Sprintf("%s/people/%d/stats?stats=expectedStatistics&group=%s&season=%s", c.v1, personID, group, season)
+	var resp struct {
+		Stats []struct {
+			Splits []struct {
+				Stat struct {
+					Avg     string `json:"avg"`
+					Slg     string `json:"slg"`
+					Woba    string `json:"woba"`
+					WobaCon string `json:"wobaCon"`
+				} `json:"stat"`
+			} `json:"splits"`
+		} `json:"stats"`
+	}
+	if err := c.get(url, &resp); err != nil {
+		return nil, err
+	}
+	if len(resp.Stats) == 0 || len(resp.Stats[0].Splits) == 0 {
+		return nil, fmt.Errorf("no expected stats for player %d", personID)
+	}
+	s := resp.Stats[0].Splits[0].Stat
+	return &ExpectedStats{XBA: s.Avg, XSLG: s.Slg, XwOBA: s.Woba, XwOBACON: s.WobaCon}, nil
+}
+
 // PlayerRecentPlays fetches the player's last nGames games (by game log) and
 // returns the plays involving the player, filtered by role ("hitting" → as
 // batter, "pitching" → as pitcher). Game feeds are fetched concurrently

@@ -90,6 +90,10 @@ export default function WinProbability({
     return out;
   }, [plays, wpQuery.data]);
 
+  // Hooks must run unconditionally, before any early return — keep useChartPalette
+  // above the empty-data guard so the hook order stays stable when data loads.
+  const palette = useChartPalette();
+
   if (data.length === 0)
     return (
       <Card>
@@ -98,7 +102,6 @@ export default function WinProbability({
     );
 
   const last = data[data.length - 1];
-  const palette = useChartPalette();
   const homeColor = palette.a; // blue (good/home)
   const awayColor = palette.b; // red or orange (CB)
 
