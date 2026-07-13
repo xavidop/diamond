@@ -106,6 +106,8 @@ export type ArticleContent = {
   storyHtml: string;
   webUrl?: string;
   images: { url: string; caption?: string; credit?: string; alt?: string }[];
+  /** Other stories ESPN links from this one. */
+  related: Article[];
 };
 
 type EspnHeadline = {
@@ -116,7 +118,37 @@ type EspnHeadline = {
   story?: string;
   links?: { web?: { href?: string } };
   images?: Array<{ url?: string; caption?: string; credit?: string; alt?: string }>;
+  related?: EspnRelated[];
 };
+
+type EspnRelated = {
+  id?: number | string;
+  type?: string;
+  headline?: string;
+  images?: Array<{ url?: string }>;
+  links?: { web?: { href?: string } };
+};
+
+function normalizeRelated(list: EspnRelated[] | undefined): Article[] {
+  const seen = new Set<string>();
+  const out: Article[] = [];
+  for (const r of list ?? []) {
+    const id = r.id != null ? String(r.id) : "";
+    if (!id || !r.headline || seen.has(id)) continue;
+    seen.add(id);
+    out.push({
+      id,
+      headline: r.headline,
+      description: "",
+      published: "",
+      type: r.type || "Story",
+      webUrl: r.links?.web?.href ?? "",
+      imageUrl: r.images?.find((i) => i.url)?.url,
+      teamIds: [],
+    });
+  }
+  return out;
+}
 
 export async function fetchArticle(id: string): Promise<ArticleContent> {
   const res = await fetch(`${ESPN_CONTENT_BASE}${encodeURIComponent(id)}`, {
@@ -142,6 +174,7 @@ export async function fetchArticle(id: string): Promise<ArticleContent> {
         credit: i.credit,
         alt: i.alt,
       })),
+    related: normalizeRelated(h.related),
   };
 }
 

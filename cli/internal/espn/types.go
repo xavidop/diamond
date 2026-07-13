@@ -28,6 +28,8 @@ type ArticleContent struct {
 	Byline    string
 	StoryHTML string // the article body as HTML (may be empty for previews)
 	Images    []string
+	// Related are other stories ESPN links from this one.
+	Related []Article
 }
 
 // espnFeed mirrors the parts of the ESPN news JSON we consume.
@@ -72,5 +74,26 @@ type espnContentFeed struct {
 		Images   []struct {
 			URL string `json:"url"`
 		} `json:"images"`
+		Related []espnRelated `json:"related"`
 	} `json:"headlines"`
+}
+
+// espnRelated is a trimmed related-story entry from the content API.
+type espnRelated struct {
+	ID       json.Number `json:"id"`
+	Type     string      `json:"type"`
+	Headline string      `json:"headline"`
+	Images   []struct {
+		URL string `json:"url"`
+	} `json:"images"`
+	Links struct {
+		Web struct {
+			Href string `json:"href"`
+		} `json:"web"`
+		API struct {
+			Self struct {
+				Href string `json:"href"`
+			} `json:"self"`
+		} `json:"api"`
+	} `json:"links"`
 }

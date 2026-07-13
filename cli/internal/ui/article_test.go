@@ -3,7 +3,34 @@ package ui
 import (
 	"strings"
 	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/xavidop/diamond/cli/internal/espn"
 )
+
+func TestArticleReaderRelatedBackStack(t *testing.T) {
+	r := NewArticleReader(espn.Article{Headline: "A", APIURL: "x"}, 80, 24)
+	r.loading = false
+	r.related = []espn.Article{{Headline: "B", APIURL: "y"}}
+
+	// Pressing "1" opens the related story and remembers where we came from.
+	r, _ = r.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
+	if r.art.Headline != "B" || len(r.history) != 1 {
+		t.Fatalf("open related: art=%q history=%d", r.art.Headline, len(r.history))
+	}
+
+	// Esc pops back to the previous story (not out of the reader).
+	r, _ = r.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	if r.art.Headline != "A" || len(r.history) != 0 || r.done {
+		t.Fatalf("esc pop: art=%q history=%d done=%v", r.art.Headline, len(r.history), r.done)
+	}
+
+	// Esc at the entry story leaves the reader.
+	r, _ = r.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	if !r.done {
+		t.Fatal("second esc should set done")
+	}
+}
 
 func TestHtmlToMarkdown(t *testing.T) {
 	in := `<p>The <a data-x="1" href="https://x/y">Phillies</a> ace said ` +

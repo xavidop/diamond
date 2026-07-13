@@ -1,12 +1,15 @@
 import { useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { useArticle, timeAgo } from "../api/espn";
 import { sanitizeStoryHtml } from "../lib/sanitizeHtml";
-import { Card, ErrorBox, Spinner, Empty } from "../components/ui/Primitives";
+import { Card, ErrorBox, Spinner, Empty, SectionTitle } from "../components/ui/Primitives";
+import NewsList from "../components/ui/NewsList";
 
 export default function ArticlePage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
   const q = useArticle(id);
 
   const html = useMemo(
@@ -14,13 +17,21 @@ export default function ArticlePage() {
     [q.data?.storyHtml]
   );
 
+  // Step back through the drill chain (article → previous article → … → the
+  // News page). `location.key` is "default" only on a direct load with no
+  // in-app history, in which case we land on the News list.
+  const goBack = () => {
+    if (location.key !== "default") navigate(-1);
+    else navigate("/news");
+  };
+
   const backLink = (
-    <Link
-      to="/news"
+    <button
+      onClick={goBack}
       className="inline-flex items-center gap-1.5 text-sm text-pitch-300 hover:text-white transition-colors"
     >
-      <ArrowLeft size={15} /> Back to News
-    </Link>
+      <ArrowLeft size={15} /> Back
+    </button>
   );
 
   if (q.isLoading) {
@@ -120,6 +131,13 @@ export default function ArticlePage() {
               Read the original on ESPN <ExternalLink size={14} />
             </a>
           </div>
+        )}
+
+        {a.related.length > 0 && (
+          <section className="pt-4">
+            <SectionTitle title="Related" subtitle="More stories" />
+            <NewsList articles={a.related.slice(0, 6)} layout="list" />
+          </section>
         )}
       </article>
     </div>

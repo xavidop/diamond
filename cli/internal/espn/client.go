@@ -108,6 +108,31 @@ func (c *Client) ArticleContent(apiURL string) (ArticleContent, error) {
 			content.Images = append(content.Images, img.URL)
 		}
 	}
+	seen := map[string]bool{}
+	for _, rel := range h.Related {
+		id := rel.ID.String()
+		if rel.Headline == "" || id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		art := Article{
+			ID:       id,
+			Headline: rel.Headline,
+			Type:     rel.Type,
+			WebURL:   rel.Links.Web.Href,
+			APIURL:   rel.Links.API.Self.Href,
+		}
+		if art.Type == "" {
+			art.Type = "Story"
+		}
+		if art.APIURL == "" {
+			art.APIURL = contentBase + id
+		}
+		if len(rel.Images) > 0 {
+			art.ImageURL = rel.Images[0].URL
+		}
+		content.Related = append(content.Related, art)
+	}
 	return content, nil
 }
 

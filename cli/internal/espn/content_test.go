@@ -46,3 +46,37 @@ func TestArticleContentErrors(t *testing.T) {
 		t.Fatal("want error when no headlines")
 	}
 }
+
+func TestArticleContentRelated(t *testing.T) {
+	const body = `{"headlines":[{"headline":"Main","story":"<p>x</p>","related":[
+	  {"id":222,"type":"Recap","headline":"Rel A",
+	   "images":[{"url":"https://img/r.png"}],
+	   "links":{"web":{"href":"https://espn.com/a"},
+	            "api":{"self":{"href":"https://content.core.api.espn.com/v1/sports/news/222"}}}},
+	  {"id":222,"type":"Recap","headline":"Dup (same id)"},
+	  {"id":333,"headline":"Rel B (no type, api fallback)"}
+	]}]}`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(body))
+	}))
+	defer srv.Close()
+
+	got, err := NewClient(BaseURL).ArticleContent(srv.URL)
+	if err != nil {
+		t.Fatalf("ArticleContent: %v", err)
+	}
+	if len(got.Related) != 2 {
+		t.Fatalf("want 2 related (deduped), got %d: %+v", len(got.Related), got.Related)
+	}
+	a := got.Related[0]
+	if a.ID != "222" || a.Headline != "Rel A" || a.Type != "Recap" {
+		t.Fatalf("bad related[0]: %+v", a)
+	}
+	if a.APIURL != "https://content.core.api.espn.com/v1/sports/news/222" {
+		t.Fatalf("bad related[0] APIURL: %q", a.APIURL)
+	}
+	b := got.Related[1]
+	if b.Type != "Story" || b.APIURL != contentBase+"333" {
+		t.Fatalf("bad related[1] type/APIURL fallback: %+v", b)
+	}
+}

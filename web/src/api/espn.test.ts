@@ -138,4 +138,40 @@ describe("fetchArticle", () => {
     );
     await expect(fetchArticle("1")).rejects.toThrow();
   });
+
+  it("normalizes and de-dupes related stories", async () => {
+    const withRelated = {
+      headlines: [
+        {
+          headline: "Main",
+          story: "<p>x</p>",
+          related: [
+            {
+              id: 222,
+              type: "Recap",
+              headline: "Rel A",
+              images: [{ url: "https://img/r.png" }],
+              links: { web: { href: "https://espn.com/a" } },
+            },
+            { id: 222, type: "Recap", headline: "Dup" },
+            { id: 333, headline: "Rel B" }, // no type → defaults to Story
+            { id: 444 }, // no headline → dropped
+          ],
+        },
+      ],
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => withRelated })
+    );
+    const out = await fetchArticle("1");
+    expect(out.related).toHaveLength(2);
+    expect(out.related[0]).toMatchObject({
+      id: "222",
+      headline: "Rel A",
+      type: "Recap",
+      imageUrl: "https://img/r.png",
+    });
+    expect(out.related[1]).toMatchObject({ id: "333", type: "Story" });
+  });
 });

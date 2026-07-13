@@ -20,12 +20,16 @@ type ArticleReader struct {
 	art     espn.Article
 	byline  string
 	rawMD   string
+	related []espn.Article
 	lines   []string
 	loading bool
 	err     error
 	scroll  int
 	width   int
 	height  int
+	// history is the stack of articles drilled through via related links, so
+	// esc pops back one story at a time before leaving the reader.
+	history []espn.Article
 	// done signals the parent to leave the reader and return to the list.
 	done bool
 }
@@ -55,6 +59,7 @@ func (r ArticleReader) Update(msg tea.Msg) (ArticleReader, tea.Cmd) {
 	case articleContentMsg:
 		r.loading = false
 		r.byline = msg.content.Byline
+		r.related = msg.content.Related
 		story := htmlToMarkdown(msg.content.StoryHTML)
 		if strings.TrimSpace(story) == "" {
 			story = noBodyFallback(r.art)
@@ -74,6 +79,13 @@ func (r ArticleReader) Update(msg tea.Msg) (ArticleReader, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc", "backspace":
+			// Pop back through the drill chain; only leave the reader once we're
+			// back at the story we entered from.
+			if n := len(r.history); n > 0 {
+				prev := r.history[n-1]
+				r.history = r.history[:n-1]
+				return r, r.openArticle(prev)
+			}
 			r.done = true
 		case "o":
 			return r, openURL(r.art.WebURL)
@@ -94,21 +106,63 @@ func (r ArticleReader) Update(msg tea.Msg) (ArticleReader, tea.Cmd) {
 		case "r":
 			r.loading, r.err, r.scroll = true, nil, 0
 			return r, r.Init()
+		case "1", "2", "3", "4", "5", "6", "7", "8", "9":
+			// Open a related story in place, remembering the current one so esc
+			// returns here.
+			idx := int(msg.String()[0] - '1')
+			if idx < len(r.related) && idx < maxRelated {
+				r.history = append(r.history, r.art)
+				return r, r.openArticle(r.related[idx])
+			}
 		}
 		r.clampScroll()
 	}
 	return r, nil
 }
 
+// openArticle switches the reader to art (resetting scroll/body) and returns
+// the command to fetch its content.
+func (r *ArticleReader) openArticle(art espn.Article) tea.Cmd {
+	r.art = art
+	r.byline, r.rawMD, r.related, r.lines = "", "", nil, nil
+	r.scroll, r.loading, r.err = 0, true, nil
+	return r.Init()
+}
+
 // reflow re-renders the story markdown to the current width.
 func (r *ArticleReader) reflow() {
-	if r.rawMD == "" {
+	content := r.rawMD
+	if rel := relatedMarkdown(r.related); rel != "" {
+		content += rel
+	}
+	if strings.TrimSpace(content) == "" {
 		r.lines = nil
 		return
 	}
-	rendered := renderMarkdown(r.rawMD, r.bodyWidth())
+	rendered := renderMarkdown(content, r.bodyWidth())
 	r.lines = strings.Split(rendered, "\n")
 	r.clampScroll()
+}
+
+// maxRelated caps how many related stories the reader lists (and how many are
+// reachable via number keys).
+const maxRelated = 6
+
+// relatedMarkdown renders a numbered "Related" section appended to the body.
+// The numbers match the 1–N keys that open each related story in place.
+func relatedMarkdown(rel []espn.Article) string {
+	if len(rel) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\n\n---\n\n## Related\n\n")
+	for i, a := range rel {
+		if i >= maxRelated {
+			break
+		}
+		b.WriteString(itoa(i+1) + ". " + a.Headline + "\n")
+	}
+	return b.String()
 }
 
 func (r *ArticleReader) clampScroll() {
@@ -158,6 +212,12 @@ func (r ArticleReader) View() string {
 	}
 	header := head + headline + "\n" + StyleDim.Render(strings.TrimSpace(meta)) + "\n\n"
 	help := HelpBar("↑/↓ scroll", "o open in browser", "r refresh", "esc back")
+	if n := len(r.related); n > 0 {
+		if n > maxRelated {
+			n = maxRelated
+		}
+		help = HelpBar("↑/↓ scroll", "1–"+itoa(n)+" related", "o open in browser", "esc back")
+	}
 
 	if r.err != nil {
 		return header + StyleError.Render("Could not load article: "+r.err.Error()) + "\n\n" +

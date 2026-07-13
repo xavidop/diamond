@@ -640,6 +640,8 @@ func (a App) capturesText() bool {
 		return a.venues.CapturesText()
 	case ViewGlossary:
 		return a.glossary.CapturesText()
+	case ViewNews:
+		return a.news.CapturesText()
 	case ViewCompare, ViewTeamCompare:
 		return true
 	}
