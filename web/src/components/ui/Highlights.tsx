@@ -11,7 +11,7 @@ function fmtDur(sec: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-function Player({ clip }: { clip: Clip }) {
+function Player({ clip, autoPlay }: { clip: Clip; autoPlay: boolean }) {
   return (
     <video
       key={clip.videoUrl}
@@ -19,7 +19,7 @@ function Player({ clip }: { clip: Clip }) {
       src={clip.videoUrl}
       poster={clip.thumbnail || undefined}
       controls
-      autoPlay
+      autoPlay={autoPlay}
       preload="none"
     />
   );
@@ -56,7 +56,7 @@ export default function Highlights({ gamePk }: { gamePk: string | number }) {
       <SectionTitle title="Highlights" />
       <Card>
         <div ref={playerRef} style={{ scrollMarginTop: "1rem" }}>
-          {active && <Player clip={active} />}
+          {active && <Player clip={active} autoPlay={selected != null} />}
         </div>
         {active && (
           <div className="mt-2 text-sm text-pitch-300">

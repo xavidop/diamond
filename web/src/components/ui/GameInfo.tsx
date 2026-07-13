@@ -1,8 +1,23 @@
 import { Card } from "./Primitives";
 
 export default function GameInfo({ box, game }: { box: any; game: any }) {
-  const info = (box?.info ?? []) as { label: string; value?: string }[];
+  const rawInfo = (box?.info ?? []) as { label: string; value?: string }[];
   const officials = (box?.officials ?? []) as any[];
+  // These are already shown as structured sections above — don't repeat them
+  // as raw "Notes" rows (the boxscore info feed includes them as text).
+  const HIDDEN_INFO = new Set([
+    "umpires",
+    "weather",
+    "wind",
+    "first pitch",
+    "venue",
+    "att",
+    "attendance",
+    "t",
+  ]);
+  const info = rawInfo.filter(
+    (i) => !HIDDEN_INFO.has((i.label ?? "").trim().toLowerCase())
+  );
   const weather = game?.weather;
   const venue = game?.venue;
   const attendance = game?.gameInfo?.attendance;

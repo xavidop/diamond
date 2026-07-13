@@ -86,11 +86,11 @@ func (m StandingsModel) fetch() tea.Cmd {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
-			records, err1 = c.Standings(season)
+			records, err1 = c.Standings(m.sport.ID, season)
 		}()
 		go func() {
 			defer wg.Done()
-			wcRecords, err2 = c.WildCardStandings(season)
+			wcRecords, err2 = c.WildCardStandings(m.sport.ID, season)
 		}()
 		wg.Wait()
 		if err1 != nil {

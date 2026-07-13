@@ -7,9 +7,12 @@ const TAP = 'https://github.com/xavidop/homebrew-tap';
 
 const features = [
   { tag: 'Live', title: 'Scoreboard', body: "Today's games with auto-refresh, linescores, boxscores, and probable pitchers." },
-  { tag: 'Races', title: 'Standings', body: 'Division and wild-card standings by league, with run differential, for any season.' },
-  { tag: 'Profiles', title: 'Players & teams', body: 'Rosters, season and career stats, situational splits, game logs, and trend charts.' },
-  { tag: 'Stats', title: 'Leaders', body: 'Hitting and pitching leaders for any season and category, ranked at a glance.' },
+  { tag: 'Statcast', title: 'Statcast & sabermetrics', body: 'Percentile sliders, expected stats (xBA/xSLG/xwOBA), WAR & wRC+, exit velo, barrel%, and hot/cold zone heat maps.' },
+  { tag: 'Video', title: 'Highlights', body: 'Condensed game, written recap, and every highlight clip — right on the game page.' },
+  { tag: 'Pipeline', title: 'Minors & prospects', body: 'Browse AAA→Rookie, a club’s full farm system, and a player’s climb from Rookie ball to the majors.' },
+  { tag: 'Races', title: 'Standings', body: 'Division and wild-card standings by league — MLB down through the minors — for any season.' },
+  { tag: 'Profiles', title: 'Players & teams', body: 'Rosters, career & year-by-year stats, splits, fielding, ZiPS projections, honors, farm system, and coaching staff.' },
+  { tag: 'Stats', title: 'Leaders', body: 'League and per-team hitting & pitching leaders for any season and category.' },
   { tag: 'AI', title: 'DiamondGPT', body: 'Ask in plain English — the assistant calls 18 live MLB tools to answer with real data.' },
   { tag: 'Raw', title: 'API Explorer', body: 'Call every MLB Stats API endpoint from a dynamic UI with a raw JSON viewer.' },
 ];
@@ -106,9 +109,10 @@ const features = [
           </p>
           <ul class="feature-list">
             <li>Scoreboard, standings, teams, and player profiles</li>
-            <li>Game detail with live linescore, boxscores, and play-by-play</li>
-            <li>Stat leaders, streaks, and side-by-side comparisons</li>
-            <li>API Explorer for every MLB Stats API endpoint</li>
+            <li>Statcast: percentile sliders, expected stats, WAR/wRC+, hot/cold zones</li>
+            <li>Game detail with play-by-play, highlights, condensed game & recap</li>
+            <li>Minors & prospects — farm system, and a player’s climb to the majors</li>
+            <li>Stat leaders, streaks, comparisons, and an API Explorer</li>
           </ul>
           <a class="btn btn-primary" href={WEB_APP}>Open the web app →</a>
         </div>

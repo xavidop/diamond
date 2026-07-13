@@ -93,6 +93,22 @@ export const api = {
   teamAffiliates: (teamId: number | string, season: number | string) =>
     mlbFetch<any>(`/teams/${teamId}/affiliates`, { season }),
 
+  // Coaching staff
+  teamCoaches: (teamId: number | string, season: number | string) =>
+    mlbFetch<any>(`/teams/${teamId}/coaches`, { season }),
+
+  // Per-team stat leaders (multiple categories in one call)
+  teamLeaders: (
+    teamId: number | string,
+    leaderCategories: string,
+    season: number | string
+  ) =>
+    mlbFetch<any>(`/teams/${teamId}/leaders`, {
+      leaderCategories,
+      season,
+      limit: 3,
+    }),
+
   teamStats: (teamId: number | string, params: QueryParams = {}) =>
     mlbFetch<any>(`/teams/${teamId}/stats`, {
       stats: "season",
@@ -104,7 +120,7 @@ export const api = {
   person: (personId: number | string, params: QueryParams = {}) =>
     mlbFetch<any>(`/people/${personId}`, {
       hydrate:
-        "currentTeam,team,stats(group=[hitting,pitching,fielding],type=[yearByYear,career,statsSingleSeason])",
+        "currentTeam,team,awards,education,stats(group=[hitting,pitching,fielding],type=[yearByYear,career,statsSingleSeason])",
       ...params,
     }),
 
@@ -215,6 +231,48 @@ export const api = {
       group,
       sportId,
       hydrate: "team(sport)",
+    }),
+
+  // Advanced sabermetrics — WAR/wRC+ (hitting), WAR/FIP/xFIP (pitching)
+  personSabermetrics: (
+    personId: number | string,
+    group: "hitting" | "pitching",
+    season: number | string
+  ) =>
+    mlbFetch<any>(`/people/${personId}/stats`, {
+      stats: "sabermetrics",
+      group,
+      season,
+    }),
+
+  // Fielding stats by position
+  personFielding: (personId: number | string, season: number | string) =>
+    mlbFetch<any>(`/people/${personId}/stats`, {
+      stats: "season",
+      group: "fielding",
+      season,
+    }),
+
+  // Hot/cold zones — strike-zone heat map (13 zones × several metrics)
+  personHotColdZones: (
+    personId: number | string,
+    group: "hitting" | "pitching",
+    season: number | string
+  ) =>
+    mlbFetch<any>(`/people/${personId}/stats`, {
+      stats: "hotColdZones",
+      group,
+      season,
+    }),
+
+  // ZiPS rest-of-season projections
+  personProjections: (
+    personId: number | string,
+    group: "hitting" | "pitching"
+  ) =>
+    mlbFetch<any>(`/people/${personId}/stats`, {
+      stats: "projectedRos",
+      group,
     }),
 
   // Statcast expected statistics (xBA/xSLG/xwOBA under ordinary stat names)

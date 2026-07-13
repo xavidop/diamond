@@ -188,6 +188,15 @@ type Player struct {
 	PitchHand struct {
 		Code string `json:"code"`
 	} `json:"pitchHand"`
+	Awards    []Award `json:"awards"`
+	Education struct {
+		Colleges []struct {
+			Name string `json:"name"`
+		} `json:"colleges"`
+		Highschools []struct {
+			Name string `json:"name"`
+		} `json:"highschools"`
+	} `json:"education"`
 	Stats []StatGroup `json:"stats"`
 }
 

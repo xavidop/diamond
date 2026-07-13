@@ -12,6 +12,11 @@ import VsPlayer from "../components/ui/VsPlayer";
 import Splits from "../components/ui/Splits";
 import StatcastCard from "../components/ui/StatcastCard";
 import PromotionTrail from "../components/ui/PromotionTrail";
+import PlayerSabermetrics from "../components/ui/PlayerSabermetrics";
+import HotColdZones from "../components/ui/HotColdZones";
+import PlayerFielding from "../components/ui/PlayerFielding";
+import PlayerProjections from "../components/ui/PlayerProjections";
+import PlayerHonors from "../components/ui/PlayerHonors";
 import GameLog from "../components/ui/GameLog";
 import PitchArsenal from "../components/ui/PitchArsenal";
 import {
@@ -178,6 +183,8 @@ export default function PlayerPage() {
         </div>
       </Card>
 
+      <PlayerHonors awards={(p as any).awards} education={(p as any).education} />
+
       {isPitcher ? (
         <>
           <CareerCard title="Career Pitching" data={careerPitching} keys={PITCHING_KEYS} />
@@ -211,6 +218,14 @@ export default function PlayerPage() {
         season={statcastSeason}
         actual={seasonActual}
       />
+
+      <PlayerSabermetrics personId={id} isPitcher={isPitcher} season={statcastSeason} />
+
+      <HotColdZones personId={id} isPitcher={isPitcher} />
+
+      <PlayerFielding personId={id} season={statcastSeason} />
+
+      <PlayerProjections personId={id} isPitcher={isPitcher} />
 
       <div>
         <SectionTitle

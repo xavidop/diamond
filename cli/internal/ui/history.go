@@ -103,7 +103,7 @@ func (m HistoryModel) fetch() tea.Cmd {
 		go func() { defer wg.Done(); g, _ := c.PostseasonSchedule(season); champ = wsChampion(g) }()
 		go func() { defer wg.Done(); hr, _ = c.Leaders("hitting", "homeRuns", 1, season) }()
 		go func() { defer wg.Done(); era, _ = c.Leaders("pitching", "earnedRunAverage", 1, season) }()
-		go func() { defer wg.Done(); recs, _ = c.Standings(season) }()
+		go func() { defer wg.Done(); recs, _ = c.Standings(1, season) }()
 		wg.Wait()
 		return historyLoadedMsg{champ: champ, hr: hr, era: era, records: recs}
 	}
@@ -169,7 +169,7 @@ func (m HistoryModel) View() string {
 	}
 	ts, te := headerColors()
 	head := PanelHeader(fmt.Sprintf("HISTORY  %d", m.season), m.width) + "\n\n"
-	help := HelpBar("◄/► season", "↑/↓ select", "Enter player", "r refresh", "esc back")
+	help := HelpBar(fmt.Sprintf("◄/► %d", m.season), "↑/↓ select", "Enter player", "r refresh", "esc back")
 
 	if m.loading {
 		return head + loadingView(fmt.Sprintf("Loading %d…", m.season))
@@ -180,10 +180,11 @@ func (m HistoryModel) View() string {
 
 	// World Series champion banner.
 	if m.champ != "" {
-		sb.WriteString("  🏆  " + gradientText("WORLD SERIES CHAMPIONS", ts, te) + "\n")
+		sb.WriteString("  🏆  " + gradientText(fmt.Sprintf("%d WORLD SERIES CHAMPIONS", m.season), ts, te) + "\n")
 		sb.WriteString("      " + StyleAccent.Bold(true).Render(m.champ) + "\n\n")
 	} else {
-		sb.WriteString(StyleDim.Render("  World Series result not available.") + "\n\n")
+		sb.WriteString("  🏆  " + gradientText(fmt.Sprintf("%d SEASON", m.season), ts, te) + "\n")
+		sb.WriteString(StyleDim.Render("      World Series result not available (season in progress).") + "\n\n")
 	}
 
 	// HR + ERA leaders side by side.

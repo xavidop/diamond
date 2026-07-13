@@ -27,10 +27,16 @@ func TestAwardsPlayerIDsRenderOrder(t *testing.T) {
 		"NLMVP": {aw(2)},
 		"WSMVP": {aw(3)},
 	}}
+	// Default tab = Major (MVP/CY/ROY): AL then NL.
 	ids := m.playerIDs()
-	// awardPairs order starts MVP (AL then NL); singles (WSMVP) come last.
-	if len(ids) != 3 || ids[0] != 1 || ids[1] != 2 || ids[2] != 3 {
-		t.Fatalf("ids = %v, want [1 2 3]", ids)
+	if len(ids) != 2 || ids[0] != 1 || ids[1] != 2 {
+		t.Fatalf("Major tab ids = %v, want [1 2]", ids)
+	}
+	// Postseason tab holds the WS MVP single.
+	m.tab = 3
+	ids = m.playerIDs()
+	if len(ids) != 1 || ids[0] != 3 {
+		t.Fatalf("Postseason tab ids = %v, want [3]", ids)
 	}
 }
 
@@ -84,6 +90,7 @@ func TestAwardsTallWindowFollowsCursor(t *testing.T) {
 			"NLGG": nlGG,
 		},
 		width: 100,
+		tab:   2, // Gold Glove tab
 	}
 
 	// Move cursor to the very last winner (last NL GG winner).

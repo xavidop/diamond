@@ -10,8 +10,8 @@ function Tile({ label, ball }: { label: string; ball: BattedBall | null }) {
       ? `${ball.distance} ft`
       : `${ball.ev} mph${ball.angle != null ? ` · ${ball.angle}°` : ""}`;
   return (
-    <div className="rounded-lg bg-black/20 p-3">
-      <div className="text-[10px] uppercase tracking-wider text-pitch-300/70">{label}</div>
+    <div className="rounded-lg bg-pitch-900/60 p-3">
+      <div className="text-[10px] uppercase tracking-wider text-pitch-300">{label}</div>
       <div className="font-mono text-lg tabular-nums">{detail}</div>
       <div className="text-xs text-pitch-300">{ball.batter}</div>
     </div>

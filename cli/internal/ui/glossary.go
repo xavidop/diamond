@@ -52,6 +52,27 @@ var glossaryTerms = []GlossaryTerm{
 	{"PYTHW", "Pythagorean Wins", "Expected wins from runs scored/allowed."},
 	{"L10", "Last Ten", "Win-loss record over the last ten games."},
 	{"STRK", "Streak", "Current win (W) or loss (L) streak length."},
+	// Statcast & advanced
+	{"WAR", "Wins Above Replacement", "Total value vs a replacement-level player, in wins."},
+	{"wOBA", "Weighted On-Base Average", "One rate weighting each way of reaching base by run value."},
+	{"wRAA", "Weighted Runs Above Average", "Batting runs above league average."},
+	{"xBA", "Expected Batting Average", "AVG expected from each ball's exit velocity + launch angle."},
+	{"xSLG", "Expected Slugging", "SLG expected from contact quality."},
+	{"xwOBA", "Expected wOBA", "wOBA expected from contact quality (plus strikeouts and walks)."},
+	{"xwOBACON", "Expected wOBA on Contact", "xwOBA on batted balls only."},
+	{"Barrel%", "Barrel Rate", "Share of batted balls with the ideal exit-velo + launch-angle combo."},
+	{"EV", "Exit Velocity", "How hard the ball leaves the bat, in mph."},
+	{"Max EV", "Max Exit Velocity", "The batter's hardest-hit ball of the season."},
+	{"Hard-Hit%", "Hard-Hit Rate", "Share of batted balls hit 95+ mph."},
+	{"LA", "Launch Angle", "Vertical angle of the ball off the bat, in degrees."},
+	{"Sprint", "Sprint Speed", "Feet per second in a player's fastest one-second window."},
+	{"Bat Speed", "Bat Speed", "Average speed of the bat head through the zone, in mph."},
+	{"Whiff%", "Whiff Rate", "Swings and misses as a share of total swings."},
+	{"Chase%", "Chase Rate", "Swings at pitches outside the strike zone."},
+	{"OAA", "Outs Above Average", "Statcast range-based fielding runs saved."},
+	{"xFIP", "Expected FIP", "FIP with home runs normalized to a league fly-ball rate."},
+	{"Pctl", "Percentile", "A player's Statcast rank vs the league, 0 (worst) to 100 (best)."},
+	{"Zones", "Hot/Cold Zones", "A batter's results by pitch location in the strike zone."},
 }
 
 // filterGlossary returns terms whose abbreviation or definition contains q

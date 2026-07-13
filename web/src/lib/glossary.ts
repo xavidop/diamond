@@ -39,6 +39,27 @@ export const GLOSSARY: Record<string, string> = {
   pythw: "Pythagorean wins — projected wins from runs scored/allowed.",
   l10: "Record over the last 10 games.",
   strk: "Current streak — W or L plus length.",
+  // Statcast & advanced
+  war: "Wins Above Replacement — total value vs a replacement-level player, in wins.",
+  woba: "Weighted On-Base Average — one rate weighting each way of reaching base by run value.",
+  wraa: "Weighted Runs Above Average — batting runs above league average.",
+  xba: "Expected Batting Average — AVG expected from each ball's exit velocity + launch angle.",
+  xslg: "Expected Slugging — SLG expected from contact quality.",
+  xwoba: "Expected wOBA — wOBA expected from contact quality (plus strikeouts and walks).",
+  xwobacon: "Expected wOBA on Contact — xwOBA on batted balls only.",
+  barrel: "Barrel% — share of batted balls with the ideal exit-velo + launch-angle combo.",
+  ev: "Exit Velocity — how hard the ball leaves the bat, in mph.",
+  maxev: "Max Exit Velocity — the batter's hardest-hit ball of the season.",
+  hardhit: "Hard-Hit% — share of batted balls hit 95+ mph.",
+  la: "Launch Angle — vertical angle of the ball off the bat, in degrees.",
+  sprint: "Sprint Speed — feet per second in a player's fastest one-second window.",
+  batspeed: "Bat Speed — average speed of the bat head through the zone, in mph.",
+  whiff: "Whiff% — swings and misses as a share of total swings.",
+  chase: "Chase% — swings at pitches outside the strike zone.",
+  oaa: "Outs Above Average — Statcast range-based fielding runs saved.",
+  xfip: "Expected FIP — FIP with home runs normalized to a league fly-ball rate.",
+  pctl: "Percentile — a player's Statcast rank vs the league, 0 (worst) to 100 (best).",
+  zones: "Hot/Cold Zones — a batter's results by pitch location in the strike zone.",
 };
 
 export function glossary(name: string): string | undefined {

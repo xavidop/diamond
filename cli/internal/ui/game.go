@@ -583,13 +583,29 @@ func (m GameModel) renderGameInfo() string {
 	}
 
 	if len(bs.Info) > 0 {
-		sb.WriteString(section("NOTES"))
-		notes := bs.Info
-		if len(notes) > 8 {
-			notes = notes[:8]
+		// Skip labels already shown as structured sections above (the info feed
+		// repeats Umpires/Weather/Venue/etc. as text).
+		hidden := map[string]bool{
+			"umpires": true, "weather": true, "wind": true, "first pitch": true,
+			"venue": true, "att": true, "attendance": true, "t": true,
 		}
-		for _, info := range notes {
-			sb.WriteString(kv(info.Label, info.Value))
+		var lines []string
+		for _, info := range bs.Info {
+			if hidden[strings.ToLower(strings.TrimSpace(info.Label))] {
+				continue
+			}
+			if len(lines) >= 8 {
+				break
+			}
+			if s := kv(info.Label, info.Value); s != "" {
+				lines = append(lines, s)
+			}
+		}
+		if len(lines) > 0 {
+			sb.WriteString(section("NOTES"))
+			for _, l := range lines {
+				sb.WriteString(l)
+			}
 		}
 	}
 

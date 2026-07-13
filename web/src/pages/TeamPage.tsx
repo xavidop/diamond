@@ -10,6 +10,8 @@ import {
 import FavButton from "../components/ui/FavButton";
 import TeamGameLog from "../components/ui/TeamGameLog";
 import FarmSystem from "../components/ui/FarmSystem";
+import TeamLeaders from "../components/ui/TeamLeaders";
+import CoachingStaff from "../components/ui/CoachingStaff";
 import DepthChart from "../components/ui/DepthChart";
 import TeamTransactions from "../components/ui/TeamTransactions";
 import NewsList from "../components/ui/NewsList";
@@ -114,7 +116,11 @@ export default function TeamPage() {
 
       <TeamGameLog teamId={t.id} season={new Date().getFullYear()} />
 
+      <TeamLeaders teamId={t.id} />
+
       <FarmSystem team={t} />
+
+      <CoachingStaff teamId={t.id} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2 space-y-6">

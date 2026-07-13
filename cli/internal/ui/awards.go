@@ -51,6 +51,7 @@ var awardCategories = []struct {
 	{"NLSS", "NL Silver Slugger"},
 	{"ALGG", "AL Gold Glove"},
 	{"NLGG", "NL Gold Glove"},
+	{"MLBHOF", "Hall Of Fame"},
 }
 
 type AwardsModel struct {
@@ -60,28 +61,51 @@ type AwardsModel struct {
 	err     error
 	client  *mlb.Client
 	cursor  int
+	tab     int
 	width   int
+}
+
+// awardTab groups awards into a browsable tab. pairs indexes into awardPairs;
+// singles renders the postseason singles; hof renders the HOF induction class.
+type awardTabDef struct {
+	name    string
+	pairs   []int
+	singles bool
+	hof     bool
+}
+
+var awardTabs = []awardTabDef{
+	{name: "Major", pairs: []int{0, 1, 2}}, // MVP, Cy Young, ROY
+	{name: "Silver Slugger", pairs: []int{3}},
+	{name: "Gold Glove", pairs: []int{4}},
+	{name: "Postseason", singles: true},
+	{name: "Hall of Fame", hof: true},
 }
 
 // playerIDs lists award-winner player ids in render order: paired awards
 // (AL then NL) for entries with data, then the singles section.
 func (m AwardsModel) playerIDs() []int {
+	t := awardTabs[m.tab]
 	var ids []int
-	for _, p := range awardPairs {
-		al, nl := m.winners[p.al], m.winners[p.nl]
-		if len(al) == 0 && len(nl) == 0 {
-			continue
-		}
-		for _, w := range al {
+	for _, pi := range t.pairs {
+		p := awardPairs[pi]
+		for _, w := range m.winners[p.al] {
 			ids = append(ids, w.Player.ID)
 		}
-		for _, w := range nl {
+		for _, w := range m.winners[p.nl] {
 			ids = append(ids, w.Player.ID)
 		}
 	}
-	for _, s := range awardSingles {
-		if ws := m.winners[s.id]; len(ws) > 0 {
-			ids = append(ids, ws[0].Player.ID)
+	if t.singles {
+		for _, s := range awardSingles {
+			if ws := m.winners[s.id]; len(ws) > 0 {
+				ids = append(ids, ws[0].Player.ID)
+			}
+		}
+	}
+	if t.hof {
+		for _, w := range m.winners["MLBHOF"] {
+			ids = append(ids, w.Player.ID)
 		}
 	}
 	return ids
@@ -144,6 +168,12 @@ func (m AwardsModel) Update(msg tea.Msg) (AwardsModel, tea.Cmd) {
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
+		case "tab":
+			m.tab = (m.tab + 1) % len(awardTabs)
+			m.cursor = 0
+		case "shift+tab":
+			m.tab = (m.tab - 1 + len(awardTabs)) % len(awardTabs)
+			m.cursor = 0
 		case "j", "down":
 			if ids := m.playerIDs(); m.cursor < len(ids)-1 {
 				m.cursor++
@@ -253,78 +283,98 @@ func (m AwardsModel) View() string {
 		}
 	}
 
+	// Tab bar — leads with the season (always visible), then one section per group.
+	tabBar := StyleAccent.Bold(true).Render(" "+m.season+" ") + "  "
+	for i, td := range awardTabs {
+		if i == m.tab {
+			tabBar += StyleActiveTab.Render(td.name)
+		} else {
+			tabBar += StyleTab.Render(td.name)
+		}
+	}
+
 	var lines []string
 	ts, te := headerColors()
-
 	cursorLine := 0
-	idx := 0 // running winner index, must match playerIDs() order
-	for _, p := range awardPairs {
-		al, nl := m.winners[p.al], m.winners[p.nl]
-		if len(al) == 0 && len(nl) == 0 {
-			continue
-		}
-		alSel, nlSel := -1, -1
-		if m.cursor >= idx && m.cursor < idx+len(al) {
-			alSel = m.cursor - idx
-		}
-		if m.cursor >= idx+len(al) && m.cursor < idx+len(al)+len(nl) {
-			nlSel = m.cursor - idx - len(al)
-		}
-		lines = append(lines, "  "+p.icon+" "+gradientText(p.title, ts, te))
-		blockStart := len(lines)
-		block := lipgloss.JoinHorizontal(lipgloss.Top,
-			awardBlock("AL", al, colW, alSel), "  ", awardBlock("NL", nl, colW, nlSel))
-		lines = append(lines, indentBlock(block, "  ")...)
-		// Capture cursorLine if this pair contains the selected winner.
-		if m.cursor >= idx && m.cursor < idx+len(al)+len(nl) {
-			var r int
-			if m.cursor < idx+len(al) {
-				r = m.cursor - idx
-			} else {
-				r = m.cursor - idx - len(al)
-			}
-			cursorLine = blockStart + 1 + r
-		}
-		idx += len(al) + len(nl)
-		lines = append(lines, "")
-	}
+	idx := 0 // running winner index within this tab, must match playerIDs()
+	t := awardTabs[m.tab]
 
-	var singleLines []string
-	for _, s := range awardSingles {
-		ws := m.winners[s.id]
-		if len(ws) == 0 {
-			continue
+	switch {
+	case len(t.pairs) > 0:
+		for _, pi := range t.pairs {
+			p := awardPairs[pi]
+			al, nl := m.winners[p.al], m.winners[p.nl]
+			if len(al) == 0 && len(nl) == 0 {
+				continue
+			}
+			alSel, nlSel := -1, -1
+			if m.cursor >= idx && m.cursor < idx+len(al) {
+				alSel = m.cursor - idx
+			}
+			if m.cursor >= idx+len(al) && m.cursor < idx+len(al)+len(nl) {
+				nlSel = m.cursor - idx - len(al)
+			}
+			lines = append(lines, "  "+p.icon+" "+gradientText(p.title, ts, te))
+			blockStart := len(lines)
+			block := lipgloss.JoinHorizontal(lipgloss.Top,
+				awardBlock("AL", al, colW, alSel), "  ", awardBlock("NL", nl, colW, nlSel))
+			lines = append(lines, indentBlock(block, "  ")...)
+			if m.cursor >= idx && m.cursor < idx+len(al)+len(nl) {
+				r := m.cursor - idx
+				if m.cursor >= idx+len(al) {
+					r = m.cursor - idx - len(al)
+				}
+				cursorLine = blockStart + 1 + r
+			}
+			idx += len(al) + len(nl)
+			lines = append(lines, "")
 		}
-		w := ws[0]
-		sel := m.cursor == idx
-		if sel {
-			// +1 for the POSTSEASON header, +len(singleLines) for position within singles
-			cursorLine = len(lines) + 1 + len(singleLines)
+	case t.singles:
+		for _, s := range awardSingles {
+			ws := m.winners[s.id]
+			if len(ws) == 0 {
+				continue
+			}
+			w := ws[0]
+			sel := m.cursor == idx
+			idx++
+			pos := w.Player.PrimaryPosition.Abbreviation
+			posStr := ""
+			if pos != "" {
+				posStr = "  " + lipgloss.NewStyle().Foreground(positionColor(pos)).Render(pos)
+			}
+			name := StyleAccent.Bold(true).Render(w.Player.NameFirstLast)
+			if sel {
+				name = StyleItemSelected.Render("▸ " + w.Player.NameFirstLast)
+				cursorLine = len(lines)
+			}
+			lines = append(lines, fmt.Sprintf("  %s %-18s %s%s",
+				s.icon, StyleDim.Render(s.title), name, posStr))
 		}
-		idx++
-		pos := w.Player.PrimaryPosition.Abbreviation
-		posStr := ""
-		if pos != "" {
-			posStr = "  " + lipgloss.NewStyle().Foreground(positionColor(pos)).Render(pos)
+	case t.hof:
+		for _, w := range m.winners["MLBHOF"] {
+			sel := m.cursor == idx
+			idx++
+			name := StyleAccent.Bold(true).Render(w.Player.NameFirstLast)
+			if sel {
+				name = StyleItemSelected.Render("▸ " + w.Player.NameFirstLast)
+				cursorLine = len(lines)
+			}
+			pos := w.Player.PrimaryPosition.Abbreviation
+			posStr := ""
+			if pos != "" {
+				posStr = "  " + lipgloss.NewStyle().Foreground(positionColor(pos)).Render(pos)
+			}
+			lines = append(lines, "  "+name+posStr)
 		}
-		nameStr := StyleAccent.Bold(true).Render(w.Player.NameFirstLast)
-		if sel {
-			nameStr = StyleItemSelected.Render("▸ " + w.Player.NameFirstLast)
-		}
-		singleLines = append(singleLines, fmt.Sprintf("  %s %-18s %s%s",
-			s.icon, StyleDim.Render(s.title), nameStr, posStr))
-	}
-	if len(singleLines) > 0 {
-		lines = append(lines, "  "+gradientText("POSTSEASON", ts, te))
-		lines = append(lines, singleLines...)
-		lines = append(lines, "")
 	}
 
 	if len(lines) == 0 {
-		lines = append(lines, StyleDim.Render("  No awards data for "+m.season+"."))
+		lines = append(lines, StyleDim.Render("  No data for "+m.season+" in this section."))
 	}
 
-	maxLines := 30
+	// Window around the cursor (Silver Slugger / Gold Glove lists are long).
+	maxLines := 26
 	start := cursorLine - maxLines/2
 	if start < 0 {
 		start = 0
@@ -342,6 +392,6 @@ func (m AwardsModel) View() string {
 	visible := lines[start:end]
 
 	body := strings.Join(visible, "\n")
-	return panelHdr + "\n\n" + body + "\n\n" +
-		HelpBar("◄/► year", "↑/↓ select", "Enter player", "r refresh", "esc back")
+	return panelHdr + "\n" + tabBar + "\n\n" + body + "\n\n" +
+		HelpBar("Tab/⇧Tab section", "◄/► "+m.season, "↑/↓ select", "Enter player", "esc back")
 }

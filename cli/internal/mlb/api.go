@@ -3,6 +3,8 @@ package mlb
 import (
 	"fmt"
 	"net/url"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -65,8 +67,40 @@ func MergeRecentSpillover(primary, adjacent []Game, now time.Time) []Game {
 	return out
 }
 
-func (c *Client) Standings(season string) ([]StandingsRecord, error) {
-	url := fmt.Sprintf("%s/standings?leagueId=103,104&season=%s&hydrate=team,division", c.v1, season)
+// leagueIDs discovers the league IDs for a sport (used to build standings
+// queries for non-MLB levels, which have their own leagues).
+func (c *Client) leagueIDs(sportID int) (string, error) {
+	endpoint := fmt.Sprintf("%s/leagues?sportId=%d", c.v1, sportID)
+	var resp struct {
+		Leagues []struct {
+			ID int `json:"id"`
+		} `json:"leagues"`
+	}
+	if err := c.get(endpoint, &resp); err != nil {
+		return "", err
+	}
+	ids := make([]string, 0, len(resp.Leagues))
+	for _, l := range resp.Leagues {
+		ids = append(ids, strconv.Itoa(l.ID))
+	}
+	return strings.Join(ids, ","), nil
+}
+
+func (c *Client) Standings(sportID int, season string) ([]StandingsRecord, error) {
+	// MLB standings are the AL (103) + NL (104); other levels discover their
+	// own leagues so the selected sport's standings load.
+	leagueID := "103,104"
+	if sportID != 1 {
+		ids, err := c.leagueIDs(sportID)
+		if err != nil {
+			return nil, err
+		}
+		if ids == "" {
+			return nil, nil
+		}
+		leagueID = ids
+	}
+	url := fmt.Sprintf("%s/standings?leagueId=%s&season=%s&hydrate=team,division", c.v1, leagueID, season)
 	var resp struct {
 		Records []StandingsRecord `json:"records"`
 	}
@@ -129,7 +163,7 @@ func (c *Client) TeamRoster(teamID int) ([]RosterPlayer, error) {
 }
 
 func (c *Client) Person(personID int, season string) (*Player, error) {
-	url := fmt.Sprintf("%s/people/%d?hydrate=stats(group=[hitting,pitching],type=[yearByYear,career,season],season=%s)&season=%s", c.v1, personID, season, season)
+	url := fmt.Sprintf("%s/people/%d?hydrate=awards,education,stats(group=[hitting,pitching],type=[yearByYear,career,season],season=%s)&season=%s", c.v1, personID, season, season)
 	var resp struct {
 		People []Player `json:"people"`
 	}
@@ -216,7 +250,11 @@ func (c *Client) PostseasonSchedule(season string) ([]PostseasonGame, error) {
 	return games, nil
 }
 
-func (c *Client) WildCardStandings(season string) ([]StandingsRecord, error) {
+func (c *Client) WildCardStandings(sportID int, season string) ([]StandingsRecord, error) {
+	// Wild card is an MLB construct; other levels have no wild-card standings.
+	if sportID != 1 {
+		return nil, nil
+	}
 	url := fmt.Sprintf("%s/standings?leagueId=103,104&season=%s&standingsTypes=wildCard&hydrate=team,division", c.v1, season)
 	var resp struct {
 		Records []StandingsRecord `json:"records"`

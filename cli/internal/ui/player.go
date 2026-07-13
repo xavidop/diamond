@@ -22,9 +22,13 @@ type playerDetailMsg struct {
 	player      *mlb.Player
 	log         []mlb.StatSplit
 	splits      []mlb.SplitLine
-	expected    *mlb.ExpectedStats
-	percentiles savant.Result
-	trail       []mlb.TrailRow
+	expected     *mlb.ExpectedStats
+	percentiles  savant.Result
+	trail        []mlb.TrailRow
+	sabermetrics map[string]interface{}
+	projections  map[string]interface{}
+	fielding     []mlb.FieldingLine
+	zones        []mlb.ZoneMetric
 }
 type vsSearchMsg struct{ results []mlb.SearchResult }
 type vsLoadedMsg struct{ splits []mlb.StatSplit }
@@ -56,9 +60,13 @@ type PlayerModel struct {
 	tabEnteredAt int  // animFrame when current tab was entered
 
 	// Statcast (Overview tab)
-	expected    *mlb.ExpectedStats
-	percentiles savant.Result
-	trail       []mlb.TrailRow
+	expected     *mlb.ExpectedStats
+	percentiles  savant.Result
+	trail        []mlb.TrailRow
+	sabermetrics map[string]interface{}
+	projections  map[string]interface{}
+	fielding     []mlb.FieldingLine
+	zones        []mlb.ZoneMetric
 
 	// Vs tab sub-state
 	vsSearch   SearchInput
@@ -77,13 +85,13 @@ type PlayerModel struct {
 }
 
 // playerTabs returns the ordered tab labels for the player detail view.
-// Hitter: Overview / Splits / Years / Spray / Zone / Vs
-// Pitcher: Overview / Splits / Years / Arsenal / Zone / Vs
+// Hitter:  Overview / Statcast / Splits / Years / Spray / Zone / Heat / Path / Vs
+// Pitcher: Overview / Statcast / Splits / Years / Arsenal / Zone / Heat / Path / Vs
 func playerTabs(isPitcher bool) []string {
 	if isPitcher {
-		return []string{"Overview", "Splits", "Years", "Arsenal", "Zone", "Heat", "Vs"}
+		return []string{"Overview", "Statcast", "Splits", "Years", "Arsenal", "Zone", "Heat", "Path", "Vs"}
 	}
-	return []string{"Overview", "Splits", "Years", "Spray", "Zone", "Heat", "Vs"}
+	return []string{"Overview", "Statcast", "Splits", "Years", "Spray", "Zone", "Heat", "Path", "Vs"}
 }
 
 // vsTabIdx returns the index of the "Vs" tab for the given role.
@@ -209,9 +217,14 @@ func (m PlayerModel) loadDetail(id int) tea.Cmd {
 		}
 		percentiles := savant.Fetch(id, pctKind, time.Now().Year())
 		trail, _ := c.PlayerTrail(id, group)
+		saber, _ := c.PlayerSabermetrics(id, group, season)
+		proj, _ := c.PlayerProjections(id, group)
+		fielding, _ := c.PlayerFielding(id, season)
+		zones, _ := c.PlayerHotColdZones(id, group, season)
 		return playerDetailMsg{
 			player: p, log: log, splits: splits,
 			expected: expected, percentiles: percentiles, trail: trail,
+			sabermetrics: saber, projections: proj, fielding: fielding, zones: zones,
 		}
 	}
 }
@@ -253,6 +266,10 @@ func (m PlayerModel) Update(msg tea.Msg) (PlayerModel, tea.Cmd) {
 		m.expected = msg.expected
 		m.percentiles = msg.percentiles
 		m.trail = msg.trail
+		m.sabermetrics = msg.sabermetrics
+		m.projections = msg.projections
+		m.fielding = msg.fielding
+		m.zones = msg.zones
 		return m, nil
 
 	case vsSearchMsg:
@@ -498,7 +515,19 @@ func (m PlayerModel) View() string {
 	tabName := tabs[m.tab]
 	switch tabName {
 	case "Overview":
-		body = renderPlayerOverview(p, m.gameLog) + m.renderStatcast() + m.renderTrail()
+		body = renderPlayerOverview(p, m.gameLog) + m.renderHonors()
+	case "Statcast":
+		body = strings.TrimLeft(
+			m.renderStatcast()+m.renderSabermetrics()+m.renderZones()+
+				m.renderFielding()+m.renderProjections(), "\n")
+		if strings.TrimSpace(body) == "" {
+			body = StyleDim.Render("  No Statcast data for this player.")
+		}
+	case "Path":
+		body = strings.TrimLeft(m.renderTrail(), "\n")
+		if strings.TrimSpace(body) == "" {
+			body = StyleDim.Render("  No minor-league career path (MLB only).")
+		}
 	case "Splits":
 		if s := renderSplits(m.splits, isPitcher); s != "" {
 			body = StyleAccent.Bold(true).Render("  SPLITS") + "  " +
@@ -629,6 +658,167 @@ func percentileBar(v int) string {
 	}
 	bar := strings.Repeat("█", filled) + strings.Repeat("░", width-filled)
 	return lipgloss.NewStyle().Foreground(col).Render(bar)
+}
+
+// renderHonors renders major awards + schools on the Overview tab.
+func (m PlayerModel) renderHonors() string {
+	if m.player == nil {
+		return ""
+	}
+	awards := mlb.FilterAwards(m.player.Awards, 10)
+	var edu []string
+	for _, c := range m.player.Education.Colleges {
+		if c.Name != "" {
+			edu = append(edu, c.Name)
+		}
+	}
+	for _, h := range m.player.Education.Highschools {
+		if h.Name != "" {
+			edu = append(edu, h.Name)
+		}
+	}
+	if len(awards) == 0 && len(edu) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\n\n  " + StyleAccent.Bold(true).Render("HONORS") + "\n")
+	for _, a := range awards {
+		yr := ""
+		if len(a.Season) >= 4 {
+			yr = " " + StyleDim.Render("'"+a.Season[2:4])
+		}
+		b.WriteString("  • " + a.Name + yr + "\n")
+	}
+	if len(edu) > 0 {
+		b.WriteString(StyleDim.Render("  School: ") + strings.Join(edu, " · ") + "\n")
+	}
+	return b.String()
+}
+
+// renderSabermetrics renders WAR/wRC+ (hitters) or WAR/FIP/xFIP (pitchers).
+func (m PlayerModel) renderSabermetrics() string {
+	if m.sabermetrics == nil {
+		return ""
+	}
+	isPitcher := m.player != nil && m.player.PrimaryPosition.Code == "1"
+	var b strings.Builder
+	b.WriteString("\n\n  " + StyleAccent.Bold(true).Render("SABERMETRICS") + "\n")
+	if isPitcher {
+		b.WriteString(fmt.Sprintf("  WAR %s   FIP %s   xFIP %s   RA9-WAR %s\n",
+			trailStr(m.sabermetrics, "war"), trailStr(m.sabermetrics, "fip"),
+			trailStr(m.sabermetrics, "xfip"), trailStr(m.sabermetrics, "ra9War")))
+	} else {
+		b.WriteString(fmt.Sprintf("  WAR %s   wRC+ %s   wRAA %s   wOBA %s\n",
+			trailStr(m.sabermetrics, "war"), trailStr(m.sabermetrics, "wRcPlus"),
+			trailStr(m.sabermetrics, "wRaa"), trailStr(m.sabermetrics, "woba")))
+	}
+	return b.String()
+}
+
+// renderProjections renders the ZiPS rest-of-season projection line.
+func (m PlayerModel) renderProjections() string {
+	if m.projections == nil {
+		return ""
+	}
+	isPitcher := m.player != nil && m.player.PrimaryPosition.Code == "1"
+	var b strings.Builder
+	b.WriteString("\n  " + StyleAccent.Bold(true).Render("PROJECTED (ROS)") + "  " +
+		StyleDim.Render("ZiPS") + "\n")
+	if isPitcher {
+		b.WriteString(fmt.Sprintf("  W %s   ERA %s   IP %s   SO %s   WHIP %s\n",
+			trailStr(m.projections, "wins"), trailStr(m.projections, "era"),
+			trailStr(m.projections, "inningsPitched"), trailStr(m.projections, "strikeOuts"),
+			trailStr(m.projections, "whip")))
+	} else {
+		b.WriteString(fmt.Sprintf("  HR %s   R %s   AVG %s   OBP %s   SLG %s   OPS %s\n",
+			trailStr(m.projections, "homeRuns"), trailStr(m.projections, "runs"),
+			trailStr(m.projections, "avg"), trailStr(m.projections, "obp"),
+			trailStr(m.projections, "slg"), trailStr(m.projections, "ops")))
+	}
+	return b.String()
+}
+
+// renderFielding renders a by-position fielding table.
+func (m PlayerModel) renderFielding() string {
+	if len(m.fielding) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\n  " + StyleAccent.Bold(true).Render("FIELDING") + "\n")
+	b.WriteString(StyleHeader.Render(fmt.Sprintf("  %-4s %-4s %-6s %-4s %-4s %-4s %-4s",
+		"POS", "G", "FPCT", "PO", "A", "E", "DP")) + "\n")
+	for _, f := range m.fielding {
+		b.WriteString(fmt.Sprintf("  %-4s %-4d %-6s %-4d %-4d %-4d %-4d\n",
+			f.Pos, f.G, f.FPct, f.PO, f.A, f.E, f.DP))
+	}
+	return b.String()
+}
+
+// renderZones renders a 3×3 hot/cold strike-zone heat map (catcher's view) for
+// the batting-average metric (or the first available), colored by temperature.
+func (m PlayerModel) renderZones() string {
+	if len(m.zones) == 0 {
+		return ""
+	}
+	metric := m.zones[0]
+	for _, z := range m.zones {
+		if z.Name == "battingAverage" {
+			metric = z
+			break
+		}
+	}
+	inner, _ := mlb.ZoneGrid(metric.Zones)
+	var b strings.Builder
+	b.WriteString("\n  " + StyleAccent.Bold(true).Render("HOT / COLD ZONES") + "  " +
+		StyleDim.Render(zoneMetricLabel(metric.Name)) + "\n")
+	for row := 0; row < 3; row++ {
+		b.WriteString("  ")
+		for col := 0; col < 3; col++ {
+			z := inner[row*3+col]
+			if z == nil {
+				b.WriteString(StyleDim.Render("  --  "))
+				continue
+			}
+			cell := fmt.Sprintf(" %-5s", z.Value)
+			b.WriteString(lipgloss.NewStyle().
+				Background(zoneTempColor(z.Temp)).
+				Foreground(lipgloss.Color("#000")).Render(cell))
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString(StyleDim.Render("  catcher's view · red hot / blue cold") + "\n")
+	return b.String()
+}
+
+func zoneMetricLabel(name string) string {
+	switch name {
+	case "battingAverage":
+		return "AVG"
+	case "onBasePercentage":
+		return "OBP"
+	case "sluggingPercentage":
+		return "SLG"
+	case "onBasePlusSlugging":
+		return "OPS"
+	case "exitVelocity":
+		return "Exit Velo"
+	}
+	return name
+}
+
+func zoneTempColor(temp string) lipgloss.Color {
+	switch temp {
+	case "hot":
+		return lipgloss.Color("#e0392b")
+	case "warm":
+		return lipgloss.Color("#e8804a")
+	case "cool":
+		return lipgloss.Color("#5aa9e0")
+	case "cold":
+		return lipgloss.Color("#3a6fd8")
+	default:
+		return lipgloss.Color("#8a8a8a")
+	}
 }
 
 // renderTrail renders the Overview-tab "Career Path" — a player's climb across

@@ -22,6 +22,7 @@ const FEATURED = [
   "WSMVP",
   "ALCSMVP",
   "NLCSMVP",
+  "MLBHOF",
 ];
 
 export default function AwardsPage() {
@@ -167,6 +168,9 @@ export default function AwardsPage() {
                             src={teamLogoUrl(w.team.id)}
                             alt=""
                             className="h-5 w-5 object-contain"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = "none";
+                            }}
                           />
                           <span className="truncate">{w.team.name}</span>
                         </Link>

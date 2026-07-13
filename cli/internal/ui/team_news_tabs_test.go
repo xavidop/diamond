@@ -8,7 +8,7 @@ import (
 )
 
 func TestTeamTabsIncludeTxnsAndNews(t *testing.T) {
-	want := []string{"Roster", "Hitting", "Pitching", "Depth", "Game Log", "Transactions", "News", "Farm"}
+	want := []string{"Roster", "Hitting", "Pitching", "Depth", "Game Log", "Transactions", "News", "Farm", "Leaders", "Staff"}
 	if len(teamTabNames) != len(want) {
 		t.Fatalf("want %d tabs, got %d (%v)", len(want), len(teamTabNames), teamTabNames)
 	}

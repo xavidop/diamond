@@ -114,13 +114,13 @@ func defineTools(g *genkit.Genkit, c *mlb.Client, toolOpts ...ai.ToolOption) []a
 		genkit.DefineTool(g, "mlb_standings",
 			"MLB division standings (W-L, win%, games back) for a season.",
 			func(ctx *ai.ToolContext, in seasonInput) (string, error) {
-				return jsonResult(c.Standings(seasonOr(in.Season)))
+				return jsonResult(c.Standings(1, seasonOr(in.Season)))
 			}, toolOpts...),
 
 		genkit.DefineTool(g, "mlb_wildcard_standings",
 			"MLB wild card standings (the wild card race) for a season.",
 			func(ctx *ai.ToolContext, in seasonInput) (string, error) {
-				return jsonResult(c.WildCardStandings(seasonOr(in.Season)))
+				return jsonResult(c.WildCardStandings(1, seasonOr(in.Season)))
 			}, toolOpts...),
 
 		genkit.DefineTool(g, "mlb_stat_leaders",

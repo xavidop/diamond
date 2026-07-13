@@ -41,6 +41,11 @@ type teamGameLogLoadedMsg struct{ games []GameResult }
 type teamTxnsLoadedMsg struct{ txns []mlb.Transaction }
 type teamNewsLoadedMsg struct{ news []espn.Article }
 type teamAffiliatesLoadedMsg struct{ affiliates []mlb.Team }
+type teamCoachesLoadedMsg struct{ coaches []mlb.Coach }
+type teamLeadersLoadedMsg struct {
+	hitting  []mlb.TeamLeaderCat
+	pitching []mlb.TeamLeaderCat
+}
 
 type teamViewState int
 
@@ -50,7 +55,7 @@ const (
 	teamStatePlayer
 )
 
-var teamTabNames = []string{"Roster", "Hitting", "Pitching", "Depth", "Game Log", "Transactions", "News", "Farm"}
+var teamTabNames = []string{"Roster", "Hitting", "Pitching", "Depth", "Game Log", "Transactions", "News", "Farm", "Leaders", "Staff"}
 
 type TeamModel struct {
 	sport    mlb.Sport
@@ -98,6 +103,13 @@ type TeamModel struct {
 	affiliates       []mlb.Team
 	affiliatesLoaded bool
 	farmCursor       int
+
+	// leaders + staff tabs
+	hittingLeaders  []mlb.TeamLeaderCat
+	pitchingLeaders []mlb.TeamLeaderCat
+	leadersLoaded   bool
+	coaches         []mlb.Coach
+	coachesLoaded   bool
 
 	// in-app article reader (news tab)
 	readingArticle bool
@@ -187,6 +199,15 @@ func (m TeamModel) Update(msg tea.Msg) (TeamModel, tea.Cmd) {
 		m.affiliatesLoaded = true
 		m.farmCursor = 0
 		return m, nil
+	case teamCoachesLoadedMsg:
+		m.coaches = msg.coaches
+		m.coachesLoaded = true
+		return m, nil
+	case teamLeadersLoadedMsg:
+		m.hittingLeaders = msg.hitting
+		m.pitchingLeaders = msg.pitching
+		m.leadersLoaded = true
+		return m, nil
 	case ErrMsg:
 		m.loading = false
 		m.playerLoading = false
@@ -216,6 +237,8 @@ func (m TeamModel) Update(msg tea.Msg) (TeamModel, tea.Cmd) {
 					m.teamTxns, m.teamTxnsLoaded = nil, false
 					m.teamNews, m.teamNewsLoaded, m.newsCursor = nil, false, 0
 					m.affiliates, m.affiliatesLoaded, m.farmCursor = nil, false, 0
+					m.coaches, m.coachesLoaded = nil, false
+					m.hittingLeaders, m.pitchingLeaders, m.leadersLoaded = nil, nil, false
 					return m, m.loadTeamDetail(t.ID)
 				}
 			case "esc":
@@ -291,6 +314,8 @@ func (m TeamModel) Update(msg tea.Msg) (TeamModel, tea.Cmd) {
 						m.teamTxns, m.teamTxnsLoaded = nil, false
 						m.teamNews, m.teamNewsLoaded, m.newsCursor = nil, false, 0
 						m.affiliates, m.affiliatesLoaded, m.farmCursor = nil, false, 0
+						m.coaches, m.coachesLoaded = nil, false
+						m.hittingLeaders, m.pitchingLeaders, m.leadersLoaded = nil, nil, false
 						return m, m.loadTeamDetail(target.ID)
 					}
 				}
@@ -412,8 +437,42 @@ func (m *TeamModel) onTeamTabChange() tea.Cmd {
 		if !m.affiliatesLoaded && m.team != nil && m.team.ParentOrgID == 0 {
 			return m.loadTeamAffiliates(m.team.ID)
 		}
+	case 8:
+		if !m.leadersLoaded && m.team != nil {
+			return m.loadTeamLeaders(m.team.ID)
+		}
+	case 9:
+		if !m.coachesLoaded && m.team != nil {
+			return m.loadTeamCoaches(m.team.ID)
+		}
 	}
 	return nil
+}
+
+// loadTeamLeaders fetches per-category hitting + pitching leaders (best-effort).
+func (m TeamModel) loadTeamLeaders(teamID int) tea.Cmd {
+	c := m.client
+	season := fmt.Sprintf("%d", time.Now().Year())
+	return func() tea.Msg {
+		h, p, err := c.TeamLeaders(teamID, season)
+		if err != nil {
+			return teamLeadersLoadedMsg{}
+		}
+		return teamLeadersLoadedMsg{hitting: h, pitching: p}
+	}
+}
+
+// loadTeamCoaches fetches the coaching staff (best-effort).
+func (m TeamModel) loadTeamCoaches(teamID int) tea.Cmd {
+	c := m.client
+	season := fmt.Sprintf("%d", time.Now().Year())
+	return func() tea.Msg {
+		coaches, err := c.TeamCoaches(teamID, season)
+		if err != nil {
+			return teamCoachesLoadedMsg{}
+		}
+		return teamCoachesLoadedMsg{coaches: coaches}
+	}
 }
 
 // loadTeamAffiliates fetches a club's minor-league affiliates (best-effort).
@@ -618,6 +677,10 @@ func (m TeamModel) View() string {
 		body = m.renderTeamNews()
 	case 7:
 		body = m.renderFarm()
+	case 8:
+		body = m.renderTeamLeaders()
+	case 9:
+		body = m.renderCoaches()
 	}
 
 	help := HelpBar("Tab/⇧Tab change view", "f favorite", "esc back")
@@ -662,6 +725,64 @@ func (m TeamModel) renderFarm() string {
 		}
 	}
 	b.WriteString("\n" + StyleDim.Render("  ↑/↓ select · Enter open affiliate"))
+	return b.String()
+}
+
+// renderCoaches lists the coaching staff.
+func (m TeamModel) renderCoaches() string {
+	if !m.coachesLoaded {
+		return loadingView("Loading staff…")
+	}
+	if len(m.coaches) == 0 {
+		return StyleDim.Render("  No coaching-staff data.")
+	}
+	var b strings.Builder
+	b.WriteString(StyleAccent.Bold(true).Render("  COACHING STAFF") + "\n\n")
+	for _, c := range m.coaches {
+		num := "     "
+		if c.Jersey != "" {
+			num = StyleDim.Render(fmt.Sprintf("#%-4s", c.Jersey))
+		}
+		title := c.Title
+		if title == "" {
+			title = c.Job
+		}
+		b.WriteString(fmt.Sprintf("  %s %-26s %s\n",
+			num, truncate(c.Person.FullName, 26), StyleDim.Render(title)))
+	}
+	return b.String()
+}
+
+// renderTeamLeaders lists per-category hitting + pitching leaders.
+func (m TeamModel) renderTeamLeaders() string {
+	if !m.leadersLoaded {
+		return loadingView("Loading leaders…")
+	}
+	if len(m.hittingLeaders) == 0 && len(m.pitchingLeaders) == 0 {
+		return StyleDim.Render("  No leader data.")
+	}
+	var b strings.Builder
+	b.WriteString(StyleAccent.Bold(true).Render("  TEAM LEADERS") + "\n")
+	section := func(title string, cats []mlb.TeamLeaderCat) {
+		if len(cats) == 0 {
+			return
+		}
+		b.WriteString("\n  " + StyleHeader.Render(title) + "\n")
+		for _, cat := range cats {
+			if len(cat.Leaders) == 0 {
+				continue
+			}
+			top := cat.Leaders[0]
+			b.WriteString(fmt.Sprintf("  %-5s %-24s %s\n",
+				cat.Label, truncate(top.Name, 24), StyleAccent.Render(top.Value)))
+			for _, l := range cat.Leaders[1:] {
+				b.WriteString(StyleDim.Render(fmt.Sprintf("        %d. %-20s %s",
+					l.Rank, truncate(l.Name, 20), l.Value)) + "\n")
+			}
+		}
+	}
+	section("HITTING", m.hittingLeaders)
+	section("PITCHING", m.pitchingLeaders)
 	return b.String()
 }
 
