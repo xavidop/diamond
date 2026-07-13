@@ -1,3 +1,12 @@
+# [1.14.0](https://github.com/xavidop/diamond/compare/v1.13.0...v1.14.0) (2026-07-13)
+
+
+### Features
+
+* farms ([40b26c8](https://github.com/xavidop/diamond/commit/40b26c84db0a905c5dd28d4d78cb0e4fce71d111))
+* more complete platform ([ffa6804](https://github.com/xavidop/diamond/commit/ffa68045e5dfe6b94573a81524c25e92cd22c416))
+* statcast + mach highlights ([d18369a](https://github.com/xavidop/diamond/commit/d18369ae931a8b73f5c0cbc340e8526bf4f57498))
+
 # [1.13.0](https://github.com/xavidop/diamond/compare/v1.12.0...v1.13.0) (2026-07-13)
 
 
