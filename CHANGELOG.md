@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/xavidop/diamond/compare/v1.12.0...v1.13.0) (2026-07-13)
+
+
+### Features
+
+* news imprvement ([6ff587a](https://github.com/xavidop/diamond/commit/6ff587a7344e5e625c1d1b28c9777190bdf444d0))
+
 # [1.12.0](https://github.com/xavidop/diamond/compare/v1.11.0...v1.12.0) (2026-07-12)
 
 
