@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/xavidop/diamond/compare/v1.14.0...v1.15.0) (2026-07-14)
+
+
+### Features
+
+* improve order ([2da346d](https://github.com/xavidop/diamond/commit/2da346d44b726f46bfd1827dbd066b61c241c642))
+
 # [1.14.0](https://github.com/xavidop/diamond/compare/v1.13.0...v1.14.0) (2026-07-13)
 
 
