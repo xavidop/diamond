@@ -17,7 +17,7 @@ import { HeadToHead, RecentForm } from "../components/ui/MatchupInsights";
 import GameStatcast from "../components/ui/GameStatcast";
 import Highlights from "../components/ui/Highlights";
 import NotifyButton from "../components/ui/NotifyButton";
-import { useState } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { cn } from "../lib/utils";
 
 export default function GamePage() {
@@ -52,6 +52,70 @@ export default function GamePage() {
   const awayScore = linescore?.teams?.away?.runs;
   const homeScore = linescore?.teams?.home?.runs;
   const isLive = game?.status?.abstractGameState === "Live";
+  const isFinal = game?.status?.abstractGameState === "Final";
+
+  const sections: Record<string, ReactNode> = {
+    linescore: <Linescore linescore={linescore} away={away} home={home} />,
+    boxscore: <Boxscore box={box} />,
+    highlights: <Highlights gamePk={id} />,
+    playByPlay: <PlayByPlay plays={plays} />,
+    winProb: (
+      <div>
+        <SectionTitle title="Win Probability" subtitle="Home team WP%, with leverage in tooltip." />
+        <WinProbability
+          gamePk={id}
+          plays={plays}
+          awayName={away?.teamName}
+          homeName={home?.teamName}
+        />
+      </div>
+    ),
+    strikeZone: (
+      <div>
+        <SectionTitle title="Strike Zone" subtitle="All pitches plotted from the catcher's view." />
+        <PitchZone gamePk={id} />
+      </div>
+    ),
+    sprayChart: (
+      <div>
+        <SectionTitle title="Spray Chart" subtitle="All batted balls plotted on the field." />
+        <SprayChart gamePk={id} />
+      </div>
+    ),
+    statcast: <GameStatcast feed={feed} />,
+    headToHead: (
+      <HeadToHead
+        awayId={away?.id}
+        homeId={home?.id}
+        awayName={away?.teamName}
+        homeName={home?.teamName}
+        season={game?.game?.season}
+        endDate={game?.datetime?.officialDate}
+        currentGamePk={Number(id)}
+      />
+    ),
+    recentForm: (
+      <RecentForm
+        awayId={away?.id}
+        homeId={home?.id}
+        awayName={away?.teamName}
+        homeName={home?.teamName}
+        endDate={game?.datetime?.officialDate}
+        currentGamePk={Number(id)}
+      />
+    ),
+    gameInfo: <GameInfo box={box} game={game} />,
+  };
+
+  // Order sections by what matters most for the game's current state:
+  //  - finished → results (boxscore, highlights, recap)
+  //  - live → live game flow (linescore, win prob, play-by-play)
+  //  - upcoming → only the pre-game matchup; the rest has no data yet, so skip it
+  const order = isFinal
+    ? ["linescore", "boxscore", "highlights", "playByPlay", "winProb", "strikeZone", "sprayChart", "statcast", "headToHead", "recentForm", "gameInfo"]
+    : isLive
+    ? ["linescore", "winProb", "playByPlay", "boxscore", "headToHead", "recentForm", "strikeZone", "sprayChart", "statcast", "highlights", "gameInfo"]
+    : ["headToHead", "recentForm", "gameInfo"];
 
   return (
     <div className="space-y-6">
@@ -100,46 +164,9 @@ export default function GamePage() {
         </div>
       </Card>
 
-      <Linescore linescore={linescore} away={away} home={home} />
-      <HeadToHead
-        awayId={away?.id}
-        homeId={home?.id}
-        awayName={away?.teamName}
-        homeName={home?.teamName}
-        season={game?.game?.season}
-        endDate={game?.datetime?.officialDate}
-        currentGamePk={Number(id)}
-      />
-      <RecentForm
-        awayId={away?.id}
-        homeId={home?.id}
-        awayName={away?.teamName}
-        homeName={home?.teamName}
-        endDate={game?.datetime?.officialDate}
-        currentGamePk={Number(id)}
-      />
-      <div>
-        <SectionTitle title="Win Probability" subtitle="Home team WP%, with leverage in tooltip." />
-        <WinProbability
-          gamePk={id}
-          plays={plays}
-          awayName={away?.teamName}
-          homeName={home?.teamName}
-        />
-      </div>
-      <Boxscore box={box} />
-      <GameInfo box={box} game={game} />
-      <div>
-        <SectionTitle title="Strike Zone" subtitle="All pitches plotted from the catcher's view." />
-        <PitchZone gamePk={id} />
-      </div>
-      <div>
-        <SectionTitle title="Spray Chart" subtitle="All batted balls plotted on the field." />
-        <SprayChart gamePk={id} />
-      </div>
-      <GameStatcast feed={feed} />
-      <Highlights gamePk={id} />
-      <PlayByPlay plays={plays} />
+      {order.map((k) => (
+        <Fragment key={k}>{sections[k]}</Fragment>
+      ))}
     </div>
   );
 }

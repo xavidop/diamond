@@ -183,8 +183,55 @@ export default function PlayerPage() {
         </div>
       </Card>
 
-      <PlayerHonors awards={(p as any).awards} education={(p as any).education} />
+      {/* ===== Current season — how they're performing right now ===== */}
+      <CareerCard
+        title={`${statcastSeason} Season`}
+        data={singleSeason}
+        keys={isPitcher ? PITCHING_KEYS : HITTING_KEYS}
+      />
 
+      <div>
+        <SectionTitle
+          title="Game Log"
+          subtitle="Recent games with rolling sparkline."
+        />
+        <GameLog personId={id} isPitcher={isPitcher} />
+      </div>
+
+      <StatcastCard
+        personId={id}
+        group={isPitcher ? "pitching" : "hitting"}
+        season={statcastSeason}
+        actual={seasonActual}
+      />
+
+      <PlayerSabermetrics personId={id} isPitcher={isPitcher} season={statcastSeason} />
+
+      <HotColdZones personId={id} isPitcher={isPitcher} />
+
+      <div>
+        <SectionTitle
+          title="Splits"
+          subtitle="vs L/R, home/away, day/night, situational."
+        />
+        <Splits personId={id} isPitcher={isPitcher} />
+      </div>
+
+      <PlayerFielding personId={id} season={statcastSeason} />
+
+      {isPitcher && (
+        <div>
+          <SectionTitle
+            title="Pitch Arsenal"
+            subtitle="Aggregated pitch types across recent games."
+          />
+          <PitchArsenal personId={id} isPitcher={isPitcher} />
+        </div>
+      )}
+
+      <PlayerProjections personId={id} isPitcher={isPitcher} />
+
+      {/* ===== Career & history — the full body of work ===== */}
       {isPitcher ? (
         <>
           <CareerCard title="Career Pitching" data={careerPitching} keys={PITCHING_KEYS} />
@@ -210,49 +257,9 @@ export default function PlayerPage() {
         </>
       )}
 
-      <PromotionTrail personId={id} isPitcher={isPitcher} />
+      <PlayerHonors awards={(p as any).awards} education={(p as any).education} />
 
-      <StatcastCard
-        personId={id}
-        group={isPitcher ? "pitching" : "hitting"}
-        season={statcastSeason}
-        actual={seasonActual}
-      />
-
-      <PlayerSabermetrics personId={id} isPitcher={isPitcher} season={statcastSeason} />
-
-      <HotColdZones personId={id} isPitcher={isPitcher} />
-
-      <PlayerFielding personId={id} season={statcastSeason} />
-
-      <PlayerProjections personId={id} isPitcher={isPitcher} />
-
-      <div>
-        <SectionTitle
-          title="Splits"
-          subtitle="vs L/R, home/away, day/night, situational."
-        />
-        <Splits personId={id} isPitcher={isPitcher} />
-      </div>
-
-      <div>
-        <SectionTitle
-          title="Game Log"
-          subtitle="Recent games with rolling sparkline."
-        />
-        <GameLog personId={id} isPitcher={isPitcher} />
-      </div>
-
-      {isPitcher && (
-        <div>
-          <SectionTitle
-            title="Pitch Arsenal"
-            subtitle="Aggregated pitch types across recent games."
-          />
-          <PitchArsenal personId={id} isPitcher={isPitcher} />
-        </div>
-      )}
-
+      {/* ===== Reference — career matchup tool and minors history ===== */}
       <div>
         <SectionTitle
           title="Matchup"
@@ -262,6 +269,8 @@ export default function PlayerPage() {
         />
         <VsPlayer personId={id} isPitcher={isPitcher} />
       </div>
+
+      <PromotionTrail personId={id} isPitcher={isPitcher} />
     </div>
   );
 }
