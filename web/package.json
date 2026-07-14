@@ -17,7 +17,7 @@
   "dependencies": {
     "@genkit-ai/anthropic": "^0.3.0",
     "@genkit-ai/compat-oai": "^1.38.0",
-    "@genkit-ai/google-genai": "^1.37.0",
+    "@genkit-ai/google-genai": "^1.39.0",
     "@tanstack/react-query": "^5.100.14",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
