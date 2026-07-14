@@ -1,3 +1,13 @@
+# [1.16.0](https://github.com/xavidop/diamond/compare/v1.15.0...v1.16.0) (2026-07-14)
+
+
+### Features
+
+* improve nav ([605fb06](https://github.com/xavidop/diamond/commit/605fb06db7a6df4e81fb1bc42f69333f01211955))
+* improve navigation ([3760c6f](https://github.com/xavidop/diamond/commit/3760c6fcca158afacb656b6fdf3014109d474fb5))
+* improve page ([57bcfce](https://github.com/xavidop/diamond/commit/57bcfce8172fb210a1fec9db2e685d1488a01bf7))
+* new player page ([cd1b5b0](https://github.com/xavidop/diamond/commit/cd1b5b0369f2c2e01f57f906bd8e4532441714b5))
+
 # [1.15.0](https://github.com/xavidop/diamond/compare/v1.14.0...v1.15.0) (2026-07-14)
 
 
