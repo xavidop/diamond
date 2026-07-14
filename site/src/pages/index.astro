@@ -7,11 +7,14 @@ const TAP = 'https://github.com/xavidop/homebrew-tap';
 
 const features = [
   { tag: 'Live', title: 'Scoreboard', body: "Today's games with auto-refresh, linescores, boxscores, and probable pitchers." },
-  { tag: 'Statcast', title: 'Statcast & sabermetrics', body: 'Percentile sliders, expected stats (xBA/xSLG/xwOBA), WAR & wRC+, exit velo, barrel%, and hot/cold zone heat maps.' },
+  { tag: 'Game', title: 'Game detail', body: 'Linescore, play-by-play with win probability, head-to-head series, recent form, and every highlight clip.' },
   { tag: 'Video', title: 'Highlights', body: 'Condensed game, written recap, and every highlight clip — right on the game page.' },
+  { tag: 'Statcast', title: 'Statcast & sabermetrics', body: 'Percentile sliders, expected stats (xBA/xSLG/xwOBA), WAR & wRC+, exit velo, barrel%, and hot/cold zone heat maps.' },
+  { tag: 'Profiles', title: 'Player profiles', body: 'Career & year-by-year stats, splits, fielding, ZiPS projections, honors, and a percentile-ranked Statcast breakdown.' },
+  { tag: 'Clubs', title: 'Team hub', body: 'Record, division rank & streak up top — then game log, leaders, depth chart, roster, farm system, coaching, and news.' },
+  { tag: 'Head to head', title: 'Compare', body: 'Line up to four players or two teams side by side — rate & counting-stat charts plus a full career table.' },
   { tag: 'Pipeline', title: 'Minors & prospects', body: 'Browse AAA→Rookie, a club’s full farm system, and a player’s climb from Rookie ball to the majors.' },
   { tag: 'Races', title: 'Standings', body: 'Division and wild-card standings by league — MLB down through the minors — for any season.' },
-  { tag: 'Profiles', title: 'Players & teams', body: 'Rosters, career & year-by-year stats, splits, fielding, ZiPS projections, honors, farm system, and coaching staff.' },
   { tag: 'Stats', title: 'Leaders', body: 'League and per-team hitting & pitching leaders for any season and category.' },
   { tag: 'AI', title: 'DiamondGPT', body: 'Ask in plain English — the assistant calls 18 live MLB tools to answer with real data.' },
   { tag: 'Raw', title: 'API Explorer', body: 'Call every MLB Stats API endpoint from a dynamic UI with a raw JSON viewer.' },
@@ -34,6 +37,7 @@ const features = [
       <nav class="nav-links">
         <a href="#features">Features</a>
         <a href="#web">Web app</a>
+        <a href="#deep-dives">Deep dives</a>
         <a href="#diamondgpt">DiamondGPT</a>
         <a href="#cli">CLI</a>
         <a href="#alerts">Alerts</a>
@@ -132,6 +136,47 @@ const features = [
         <figure>
           <img src="/screenshots/web-explorer.png" width="1440" height="900" alt="API Explorer" />
           <figcaption><b>API Explorer</b> — every endpoint, live</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule" />
+
+  <!-- DEEP DIVES -->
+  <section class="section" id="deep-dives">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Go deeper</p>
+        <h2>Every team, player, and game — down to the last detail.</h2>
+        <p>Beyond the scoreboard, Diamond drills all the way in: club hubs, percentile-ranked
+          Statcast, walk-off game pages, and side-by-side comparisons.</p>
+      </div>
+      <div class="gallery">
+        <figure class="span-2">
+          <img src="/screenshots/web-team.png" width="1440" height="900"
+               alt="Diamond web app — team hub with record, division rank, streak, game log and roster" />
+          <figcaption><b>Team hub</b> — record, division rank &amp; streak up top, then game log, leaders, depth chart, roster, farm system &amp; news</figcaption>
+        </figure>
+        <figure>
+          <img src="/screenshots/web-player.png" width="1440" height="900"
+               alt="Diamond web app — player profile with honors and career stats" />
+          <figcaption><b>Player profiles</b> — honors, career &amp; year-by-year stats</figcaption>
+        </figure>
+        <figure>
+          <img src="/screenshots/web-statcast.png" width="1440" height="900"
+               alt="Diamond web app — Statcast percentile rankings, sabermetrics and hot/cold zones" />
+          <figcaption><b>Statcast</b> — percentile rankings, sabermetrics &amp; hot/cold zones</figcaption>
+        </figure>
+        <figure>
+          <img src="/screenshots/web-game.png" width="1440" height="900"
+               alt="Diamond web app — game detail with linescore, head-to-head and recent form" />
+          <figcaption><b>Game detail</b> — linescore, head-to-head series &amp; recent form</figcaption>
+        </figure>
+        <figure>
+          <img src="/screenshots/web-compare.png" width="1440" height="900"
+               alt="Diamond web app — compare players side by side with charts and a career table" />
+          <figcaption><b>Compare</b> — up to four players or two teams, side by side</figcaption>
         </figure>
       </div>
     </div>

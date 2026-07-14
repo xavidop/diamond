@@ -25,11 +25,53 @@ type MlbTeam = {
   abbreviation?: string;
   shortName?: string;
   firstYearOfPlay?: string;
-  league?: { name?: string };
-  division?: { name?: string };
+  league?: { id?: number; name?: string };
+  division?: { id?: number; name?: string };
   venue?: { name?: string };
   record?: { wins?: number; losses?: number };
 };
+
+type StandingsRecord = {
+  team?: { id?: number };
+  wins?: number;
+  losses?: number;
+  winningPercentage?: string;
+  gamesBack?: string;
+  divisionRank?: string | number;
+  streak?: { streakCode?: string };
+  records?: {
+    splitRecords?: Array<{ type?: string; wins?: number; losses?: number }>;
+  };
+  runsScored?: number;
+  runsAllowed?: number;
+};
+
+function ordinal(n?: number | string) {
+  const num = Number(n);
+  if (!num || Number.isNaN(num)) return "—";
+  const s = ["th", "st", "nd", "rd"];
+  const v = num % 100;
+  return `${num}${s[(v - 20) % 10] || s[v] || s[0]}`;
+}
+
+function shortLeague(name?: string) {
+  if (!name) return "";
+  return name
+    .replace("American League", "AL")
+    .replace("National League", "NL");
+}
+
+function findTeamRecord(
+  data: { records?: Array<{ teamRecords?: StandingsRecord[] }> } | undefined,
+  teamId: number
+): StandingsRecord | undefined {
+  for (const rec of data?.records ?? []) {
+    for (const tr of rec.teamRecords ?? []) {
+      if (tr.team?.id === teamId) return tr;
+    }
+  }
+  return undefined;
+}
 
 type MlbRosterPlayer = {
   person: { id: number; fullName: string };
@@ -64,6 +106,13 @@ export default function TeamPage() {
     queryFn: () => api.teamStats(id),
   });
 
+  const leagueId = (team.data?.teams?.[0] as MlbTeam | undefined)?.league?.id;
+  const standings = useQuery({
+    queryKey: ["teamStandings", leagueId],
+    queryFn: () => api.standings({ leagueId }),
+    enabled: !!leagueId,
+  });
+
   const espnId = espnTeamId(id);
   const news = useNews({ espnTeamId: espnId, limit: 6 });
 
@@ -79,8 +128,14 @@ export default function TeamPage() {
   const t = team.data?.teams?.[0] as MlbTeam | undefined;
   if (!t) return null;
 
+  const rec = findTeamRecord(standings.data, t.id);
+  const last10 = rec?.records?.splitRecords?.find((s) => s.type === "lastTen");
+  const diff =
+    rec != null ? (rec.runsScored ?? 0) - (rec.runsAllowed ?? 0) : null;
+
   return (
     <div className="space-y-6">
+      {/* Identity + record — the most important info, up top */}
       <Card>
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
           <img
@@ -91,7 +146,7 @@ export default function TeamPage() {
           />
           <div className="flex-1 text-center sm:text-left">
             <div className="page-eyebrow">
-              {t.league?.name} · {t.division?.name}
+              {shortLeague(t.division?.name) || t.league?.name}
             </div>
             <h1 className="font-display font-black text-4xl sm:text-5xl uppercase leading-none text-white tracking-tight flex items-center justify-center sm:justify-start gap-2">
               {t.name}
@@ -112,16 +167,44 @@ export default function TeamPage() {
             </div>
           </div>
         </div>
+
+        {rec && (
+          <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 overflow-hidden rounded-xl border-t border-l border-white/10">
+            <HeaderStat label="Record" value={`${rec.wins ?? "—"}-${rec.losses ?? "—"}`} />
+            <HeaderStat label="Win %" value={rec.winningPercentage ?? "—"} />
+            <HeaderStat label="Div. Rank" value={ordinal(rec.divisionRank)} />
+            <HeaderStat
+              label="Games Back"
+              value={!rec.gamesBack || rec.gamesBack === "-" ? "—" : rec.gamesBack}
+            />
+            <HeaderStat
+              label="Streak"
+              value={rec.streak?.streakCode ?? "—"}
+              valueClass={streakColor(rec.streak?.streakCode)}
+            />
+            <HeaderStat
+              label="Run Diff"
+              value={diff == null ? "—" : diff > 0 ? `+${diff}` : String(diff)}
+              valueClass={
+                diff == null || diff === 0
+                  ? "text-white"
+                  : diff > 0
+                  ? "text-emerald-400"
+                  : "text-red-400"
+              }
+              sub={last10 ? `L10 ${last10.wins}-${last10.losses}` : undefined}
+            />
+          </div>
+        )}
       </Card>
 
+      {/* Current form — how the team is playing right now */}
       <TeamGameLog teamId={t.id} season={new Date().getFullYear()} />
 
+      {/* Standout players */}
       <TeamLeaders teamId={t.id} />
 
-      <FarmSystem team={t} />
-
-      <CoachingStaff teamId={t.id} />
-
+      {/* Roster core with reference sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2 space-y-6">
           <div>
@@ -145,10 +228,6 @@ export default function TeamPage() {
             {stats.data && <TeamStats data={stats.data} />}
           </div>
           <div>
-            <SectionTitle title="Transactions" subtitle="Recent moves" />
-            <TeamTransactions teamId={t.id} limit={8} />
-          </div>
-          <div>
             <SectionTitle title="News" subtitle="Latest headlines" />
             {espnId === undefined ? (
               <div className="text-sm text-pitch-300/60">
@@ -163,10 +242,56 @@ export default function TeamPage() {
               />
             )}
           </div>
+          <div>
+            <SectionTitle title="Transactions" subtitle="Recent moves" />
+            <TeamTransactions teamId={t.id} limit={8} />
+          </div>
         </div>
       </div>
+
+      {/* Lower-priority detail — organization and pipeline */}
+      <CoachingStaff teamId={t.id} />
+
+      <FarmSystem team={t} />
     </div>
   );
+}
+
+function HeaderStat({
+  label,
+  value,
+  valueClass = "text-white",
+  sub,
+}: {
+  label: string;
+  value: string;
+  valueClass?: string;
+  sub?: string;
+}) {
+  return (
+    <div className="border-r border-b border-white/10 bg-pitch-900/40 px-3.5 py-3">
+      <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-white/45">
+        {label}
+      </div>
+      <div
+        className={`mt-1 font-display font-black text-xl sm:text-2xl tabular-nums leading-none ${valueClass}`}
+      >
+        {value}
+      </div>
+      {sub && (
+        <div className="mt-1 text-[10px] tabular-nums text-white/45">
+          {sub}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function streakColor(code?: string) {
+  if (!code) return "text-white";
+  if (code.startsWith("W")) return "text-emerald-400";
+  if (code.startsWith("L")) return "text-red-400";
+  return "text-white";
 }
 
 function RosterTable({ roster }: { roster: MlbRosterPlayer[] }) {
