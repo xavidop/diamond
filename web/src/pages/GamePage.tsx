@@ -16,6 +16,7 @@ import GameInfo from "../components/ui/GameInfo";
 import { HeadToHead, RecentForm } from "../components/ui/MatchupInsights";
 import GameStatcast from "../components/ui/GameStatcast";
 import Highlights from "../components/ui/Highlights";
+import SectionNav from "../components/ui/SectionNav";
 import NotifyButton from "../components/ui/NotifyButton";
 import { Fragment, useState, type ReactNode } from "react";
 import { cn } from "../lib/utils";
@@ -163,6 +164,8 @@ export default function GamePage() {
           </button>
         </div>
       </Card>
+
+      <SectionNav />
 
       {order.map((k) => (
         <Fragment key={k}>{sections[k]}</Fragment>

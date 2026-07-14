@@ -8,6 +8,7 @@ import {
   Spinner,
 } from "../components/ui/Primitives";
 import FavButton from "../components/ui/FavButton";
+import SectionNav from "../components/ui/SectionNav";
 import VsPlayer from "../components/ui/VsPlayer";
 import Splits from "../components/ui/Splits";
 import StatcastCard from "../components/ui/StatcastCard";
@@ -182,6 +183,8 @@ export default function PlayerPage() {
           </div>
         </div>
       </Card>
+
+      <SectionNav />
 
       {/* ===== Current season — how they're performing right now ===== */}
       <CareerCard

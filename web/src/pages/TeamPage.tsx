@@ -8,6 +8,7 @@ import {
   Spinner,
 } from "../components/ui/Primitives";
 import FavButton from "../components/ui/FavButton";
+import SectionNav from "../components/ui/SectionNav";
 import TeamGameLog from "../components/ui/TeamGameLog";
 import FarmSystem from "../components/ui/FarmSystem";
 import TeamLeaders from "../components/ui/TeamLeaders";
@@ -197,6 +198,8 @@ export default function TeamPage() {
           </div>
         )}
       </Card>
+
+      <SectionNav />
 
       {/* Current form — how the team is playing right now */}
       <TeamGameLog teamId={t.id} season={new Date().getFullYear()} />
