@@ -3,6 +3,7 @@ export type TrailRow = {
   level: string;
   levelOrder: number;
   team: string;
+  teamId?: number;
   stat: Record<string, any>;
 };
 
@@ -32,6 +33,7 @@ export function mergeTrail(
         level: lvl.label,
         levelOrder: lvl.order,
         team: s.team?.name ?? "",
+        teamId: s.team?.id,
         stat: s.stat ?? {},
       });
     }

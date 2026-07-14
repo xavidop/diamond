@@ -1,4 +1,5 @@
 import { useQueries } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { api } from "../../api/mlb";
 import { TRAIL_LEVELS, mergeTrail, hasMinors } from "../../lib/promotionTrail";
 import { Card, SectionTitle } from "./Primitives";
@@ -82,7 +83,18 @@ export default function PromotionTrail({
                         {r.level}
                       </span>
                     </td>
-                    <td>{r.team}</td>
+                    <td>
+                      {r.teamId ? (
+                        <Link
+                          to={`/teams/${r.teamId}`}
+                          className="hover:text-volt-500 hover:underline underline-offset-2 transition-colors"
+                        >
+                          {r.team}
+                        </Link>
+                      ) : (
+                        r.team
+                      )}
+                    </td>
                     {cols.map(([lbl, key]) => (
                       <td key={lbl} className="text-right tabular-nums font-mono">
                         {fmtStat(r.stat[key])}
