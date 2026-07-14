@@ -190,6 +190,8 @@ export default function PlayerPage() {
         keys={isPitcher ? PITCHING_KEYS : HITTING_KEYS}
       />
 
+      <PlayerProjections personId={id} isPitcher={isPitcher} />
+
       <div>
         <SectionTitle
           title="Game Log"
@@ -228,8 +230,6 @@ export default function PlayerPage() {
           <PitchArsenal personId={id} isPitcher={isPitcher} />
         </div>
       )}
-
-      <PlayerProjections personId={id} isPitcher={isPitcher} />
 
       {/* ===== Career & history — the full body of work ===== */}
       {isPitcher ? (
