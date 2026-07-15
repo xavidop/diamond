@@ -58,6 +58,17 @@
   html.light .diamond-chrome .text-pitch-300 { color: #3f3f4d !important; }
   html.light .diamond-app-root main .text-pitch-400,
   html.light .diamond-chrome .text-pitch-400 { color: #565666 !important; }
+  /* Opacity variants (text-pitch-300/70, /60, …) are a different class token
+     than the bare .text-pitch-300 the rules above match, so in ~150 places
+     across the app the muted secondary text (labels, captions, timestamps)
+     stayed light purple (#9494b0 × α) — ~2.3:1 on the white cards, effectively
+     invisible. Catch every /NN variant with a substring match and collapse it
+     to one readable secondary neutral (#565666 ≈ 5–6:1 on card/page/chrome).
+     Trailing slash so bare .text-pitch-300 keeps its darker #3f3f4d above.
+     Same scoping (main + chrome) so the dark overlays — command palette,
+     shortcuts modal — keep their intentional light-on-dark muted text. */
+  html.light .diamond-app-root main [class*="text-pitch-300/"],
+  html.light .diamond-chrome [class*="text-pitch-300/"] { color: #565666 !important; }
   html.light .sidebar-search-btn {
     background: rgba(0,0,0,0.07) !important;
     border-color: rgba(0,0,0,0.11) !important;
@@ -81,6 +92,13 @@
   html.light .diamond-app-root main .live-badge,
   html.light .diamond-app-root main .page-eyebrow { color: #626e00 !important; }
   html.light .diamond-app-root main .page-title { color: #13131e !important; }
+  /* Volt borders — the postseason "away won this game" pill (border-volt-500/60),
+     the live-game card ring, focus rings, the depth-chart starter ring — render
+     as near-white pale yellow (#e8ff47 × α, L≈0.95) on the light card, so the
+     encoding they carry is invisible. Map every border-volt-* variant to the
+     same olive the volt text uses, at a weight that reads on white/cream without
+     shouting. Dark mode keeps the bright yellow (this is html.light-scoped). */
+  html.light .diamond-app-root main [class*="border-volt-"] { border-color: rgba(98,110,0,0.7) !important; }
 
   /* pitch-* dark surface bg → transparent light neutrals (main only!) */
   html.light .diamond-app-root main [class*="bg-pitch-"] { background-color: rgba(0,0,0,0.04) !important; }

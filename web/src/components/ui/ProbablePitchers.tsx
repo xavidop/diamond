@@ -64,73 +64,68 @@ function ProbableCard({ game }: { game: any }) {
   return (
     <Link
       to={`/game/${game.gamePk}`}
-      className="card card-pad block hover:bg-pitch-900/80 transition-colors"
+      className="card card-pad block hover:bg-pitch-700 transition-colors"
     >
-      <div className="flex items-center justify-between text-[11px] text-pitch-300/70 mb-3">
-        <span className="pill">{game.venue?.name ?? ""}</span>
-        <span className="pill">{fmtTime(game.gameDate)}</span>
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <span className="pill truncate">{game.venue?.name ?? ""}</span>
+        <span className="pill shrink-0">{fmtTime(game.gameDate)}</span>
       </div>
 
-      <div className="grid grid-cols-[1fr,auto,1fr] items-center gap-3">
-        <PitcherSide side={away} align="left" />
-        <span className="text-[10px] uppercase tracking-widest text-pitch-300/50">
+      <PitcherRow side={away} />
+
+      <div className="my-2 flex items-center gap-2.5">
+        <div className="h-px flex-1 bg-white/[0.07]" />
+        <span className="font-display font-bold text-[9px] tracking-[0.2em] uppercase text-pitch-300/60">
           vs
         </span>
-        <PitcherSide side={home} align="right" />
+        <div className="h-px flex-1 bg-white/[0.07]" />
       </div>
+
+      <PitcherRow side={home} />
     </Link>
   );
 }
 
-function PitcherSide({
-  side,
-  align,
-}: {
-  side: any;
-  align: "left" | "right";
-}) {
+function PitcherRow({ side }: { side: any }) {
   const team = side?.team;
   const p = side?.probablePitcher;
   const stat = p?.stats?.[0]?.splits?.[0]?.stat;
-  const reverse = align === "right";
 
   return (
-    <div
-      className={`flex items-center gap-3 min-w-0 ${
-        reverse ? "flex-row-reverse text-right" : ""
-      }`}
-    >
+    <div className="flex items-center gap-3 min-w-0">
       {p ? (
         <img
           src={playerHeadshotUrl(p.id, 90)}
           alt=""
-          className="h-12 w-12 rounded-full object-cover bg-pitch-800 shrink-0"
+          className="h-12 w-12 rounded-full object-cover object-top bg-pitch-700 shrink-0"
         />
       ) : (
-        <img
-          src={teamLogoUrl(team?.id)}
-          alt=""
-          className="h-12 w-12 object-contain shrink-0 opacity-70"
-        />
-      )}
-      <div className="min-w-0">
-        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-pitch-300/70">
+        <div className="h-12 w-12 rounded-full bg-pitch-700/50 flex items-center justify-center shrink-0">
           <img
             src={teamLogoUrl(team?.id)}
             alt=""
-            className="h-3.5 w-3.5 object-contain"
+            className="h-7 w-7 object-contain opacity-70"
+          />
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 font-display font-bold text-[9px] tracking-[0.14em] uppercase text-pitch-300/70">
+          <img
+            src={teamLogoUrl(team?.id)}
+            alt=""
+            className="h-3.5 w-3.5 object-contain shrink-0"
           />
           <span className="truncate">{team?.abbreviation ?? team?.name}</span>
         </div>
-        <div className="text-sm font-semibold truncate">
+        <div className="text-sm font-semibold truncate leading-tight">
           {p?.fullName ?? "TBD"}
         </div>
         {stat ? (
-          <div className="text-[11px] font-mono text-pitch-300/80">
-            {stat.wins}-{stat.losses} · ERA {stat.era} · {stat.strikeOuts}K
+          <div className="mt-0.5 font-mono text-[11px] text-pitch-300/80 truncate">
+            {stat.wins}-{stat.losses} · {stat.era} ERA · {stat.strikeOuts} K
           </div>
         ) : (
-          <div className="text-[11px] text-pitch-300/50">—</div>
+          <div className="mt-0.5 text-[11px] text-pitch-300/50">—</div>
         )}
       </div>
     </div>

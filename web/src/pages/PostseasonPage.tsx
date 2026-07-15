@@ -15,6 +15,7 @@ type Game = {
   gamePk: number;
   seriesDescription?: string;
   seriesGameNumber?: number;
+  gameType?: string;
   status?: any;
   teams?: any;
   gameDate?: string;
@@ -29,18 +30,28 @@ type Series = {
   key: string;
 };
 
-const ROUND_ORDER = [
+// Round is derived from the MLB gameType code (F/D/L/W), which is stable and
+// language-independent. seriesDescription can't be trusted for this: the LCS
+// comes back as "AL Championship Series" / "NL Championship Series", which does
+// not contain "League Championship Series", so text matching dropped the whole
+// round. (This mirrors the CLI's gameTypeOrder.)
+const GAME_TYPE_ROUND: Record<string, number> = { F: 0, D: 1, L: 2, W: 3 };
+const ROUND_LABELS = [
   "Wild Card",
-  "Wild Card Series",
   "Division Series",
-  "League Championship Series",
+  "Championship Series",
   "World Series",
 ];
 
-function roundIndex(desc: string) {
-  for (let i = 0; i < ROUND_ORDER.length; i++) {
-    if (desc.toLowerCase().includes(ROUND_ORDER[i].toLowerCase())) return i;
-  }
+function roundIndex(g: Game): number {
+  const gt = g.gameType ?? "";
+  if (gt in GAME_TYPE_ROUND) return GAME_TYPE_ROUND[gt];
+  // Fallback to description text if gameType is ever absent.
+  const d = (g.seriesDescription ?? "").toLowerCase();
+  if (d.includes("world series")) return 3;
+  if (d.includes("championship series")) return 2;
+  if (d.includes("division series")) return 1;
+  if (d.includes("wild card")) return 0;
   return -1;
 }
 
@@ -73,7 +84,7 @@ export default function PostseasonPage() {
       if (!s) {
         s = {
           description: desc,
-          round: roundIndex(desc),
+          round: roundIndex(g),
           games: [],
           homeId,
           awayId,
@@ -93,7 +104,7 @@ export default function PostseasonPage() {
       .sort((a, b) => a.round - b.round);
   }, [data]);
 
-  const rounds = ROUND_ORDER.map((label, idx) => ({
+  const rounds = ROUND_LABELS.map((label, idx) => ({
     label,
     items: series.filter((s) => s.round === idx),
   })).filter((r) => r.items.length);
@@ -278,17 +289,25 @@ function BracketGrid({
 }
 
 function SeriesCard({ series }: { series: Series }) {
-  // Count wins for each team across the series games
-  const homeWins = series.games.filter(
-    (g) => g.teams?.home?.isWinner
-  ).length;
-  const awayWins = series.games.filter(
-    (g) => g.teams?.away?.isWinner
-  ).length;
-
   const last = series.games[series.games.length - 1];
   const home = last?.teams?.home?.team;
   const away = last?.teams?.away?.team;
+
+  // Count wins per team by comparing scores and attributing to the team id.
+  // isWinner can't be used (the API flags the series winner on every game), and
+  // tallying by home/away role is wrong because those roles alternate between
+  // games in the DS/LCS/WS rounds. (Mirrors the CLI's getSeriesStats.)
+  let homeWins = 0;
+  let awayWins = 0;
+  for (const g of series.games) {
+    if (g.status?.abstractGameState !== "Final") continue;
+    const as = g.teams?.away?.score;
+    const hs = g.teams?.home?.score;
+    if (typeof as !== "number" || typeof hs !== "number") continue;
+    const winId = as > hs ? g.teams?.away?.team?.id : hs > as ? g.teams?.home?.team?.id : undefined;
+    if (winId === home?.id) homeWins++;
+    else if (winId === away?.id) awayWins++;
+  }
 
   const homeWon = homeWins > awayWins;
   const awayWon = awayWins > homeWins;
@@ -313,15 +332,20 @@ function SeriesCard({ series }: { series: Series }) {
         {series.games.map((g) => {
           const aScore = g.teams?.away?.score;
           const hScore = g.teams?.home?.score;
-          const aWon = g.teams?.away?.isWinner;
-          const hWon = g.teams?.home?.isWinner;
           const hasScore =
             typeof aScore === "number" && typeof hScore === "number";
-          const winnerColor = aWon
-            ? "border-volt-500/60 text-white/70"
-            : hWon
-            ? "border-pitch-400/60 text-white/70"
-            : "border-white/10 text-pitch-300/80";
+          // Show the winning team's logo (it maps straight to a row above) so
+          // "who won game N" reads at a glance — no color legend to decode.
+          // Decide by score, not isWinner (which flags the series winner on
+          // every game, not the per-game winner).
+          const winner = hasScore
+            ? aScore > hScore
+              ? g.teams?.away?.team
+              : hScore > aScore
+              ? g.teams?.home?.team
+              : null
+            : null;
+          const winAbbr = winner?.abbreviation ?? winner?.name;
           const label = hasScore
             ? `${Math.max(aScore, hScore)}-${Math.min(aScore, hScore)}`
             : g.status?.detailedState?.slice(0, 3) ?? "—";
@@ -336,12 +360,23 @@ function SeriesCard({ series }: { series: Series }) {
               key={g.gamePk}
               to={`/game/${g.gamePk}`}
               title={`Game ${g.seriesGameNumber}${date ? " · " + date : ""}${
-                hasScore ? ` · ${aScore}-${hScore}` : ""
+                winAbbr ? ` · ${winAbbr} won ${label}` : hasScore ? ` · ${label}` : ""
               }`}
-              className={`text-[10px] font-mono px-1.5 py-0.5 rounded border bg-pitch-900/40 hover:bg-white/10 ${winnerColor}`}
+              className="flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded border border-white/10 bg-pitch-900/40 hover:bg-white/10 text-pitch-300/80"
             >
-              <span className="opacity-70">G{g.seriesGameNumber}</span>{" "}
-              <span className="tabular-nums">{label}</span>
+              <span className="opacity-60">G{g.seriesGameNumber}</span>
+              {winner && (
+                <img
+                  src={teamLogoUrl(winner.id)}
+                  alt={winAbbr}
+                  title={`${winAbbr} won`}
+                  className="h-3.5 w-3.5 object-contain shrink-0"
+                  onError={(e) =>
+                    ((e.target as HTMLImageElement).style.display = "none")
+                  }
+                />
+              )}
+              <span className="tabular-nums text-white/80">{label}</span>
             </Link>
           );
         })}

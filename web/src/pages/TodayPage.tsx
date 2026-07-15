@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Star, Flame, CalendarDays, Trophy, Pin as PinIcon, X } from "lucide-react";
+import { Star, Flame, CalendarDays, Trophy, Pin as PinIcon, X, Clock } from "lucide-react";
 import { api, playerHeadshotUrl, teamLogoUrl } from "../api/mlb";
 import {
   Card,
@@ -251,6 +251,7 @@ function GameCard({ game }: { game: MlbGame }) {
   const home       = game.teams?.home;
   const isLive     = status === "Live";
   const isFinal    = status === "Final";
+  const isPreview  = status === "Preview";
   const awayScore  = away?.score;
   const homeScore  = home?.score;
 
@@ -319,15 +320,23 @@ function GameCard({ game }: { game: MlbGame }) {
               : isFinal  ? "text-white/30"
               : "text-white/50"
             )}>
-              {score !== undefined
-                ? score
-                : status === "Preview"
-                ? fmtTime(game.gameDate ?? "")
-                : "—"}
+              {!isPreview && score !== undefined ? score : "—"}
             </div>
           </div>
         );
       })}
+
+      {isPreview && game.gameDate && (
+        <div className="mt-2.5 pt-2.5 border-t border-white/5 flex items-center gap-1.5">
+          <Clock size={12} className="text-volt-500 shrink-0" />
+          <span className="font-display font-bold text-[11px] tracking-[0.1em] uppercase text-white/70 tabular-nums">
+            {fmtTime(game.gameDate)}
+          </span>
+          <span className="font-display font-bold text-[9px] tracking-[0.16em] uppercase text-white/25">
+            · First pitch
+          </span>
+        </div>
+      )}
     </Link>
   );
 }

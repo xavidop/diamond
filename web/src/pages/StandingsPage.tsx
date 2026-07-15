@@ -198,7 +198,7 @@ function DivisionTable({
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="table-base">
+        <table className="table-base font-medium">
           <thead>
             <tr>
               <th>Team</th>
@@ -252,7 +252,7 @@ function DivisionTable({
                     {r.winningPercentage}
                   </td>
                   <td className="text-right tabular-nums">{r.gamesBack}</td>
-                  <td className="text-right tabular-nums text-pitch-300/80">
+                  <td className="text-right tabular-nums text-pitch-300">
                     {magic}
                   </td>
                   <td className="text-right tabular-nums">
@@ -272,7 +272,7 @@ function DivisionTable({
                   >
                     {diff > 0 ? `+${diff}` : diff}
                   </td>
-                  <td className="text-right tabular-nums font-mono text-pitch-300/80">
+                  <td className="text-right tabular-nums font-mono text-pitch-300">
                     {py ? py.toFixed(3) : "—"}
                   </td>
                   <td className="text-right tabular-nums">
@@ -316,7 +316,7 @@ function WildCardTable({ rec, league }: { rec: any; league?: any }) {
         )}
       </div>
       <div className="overflow-x-auto">
-        <table className="table-base">
+        <table className="table-base font-medium">
           <thead>
             <tr>
               <th></th>
