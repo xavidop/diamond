@@ -1,3 +1,10 @@
+## [1.16.1](https://github.com/xavidop/diamond/compare/v1.16.0...v1.16.1) (2026-07-15)
+
+
+### Bug Fixes
+
+* style and postseason ([6c24055](https://github.com/xavidop/diamond/commit/6c240552a48caaad7a21058c2c354208accc660f))
+
 # [1.16.0](https://github.com/xavidop/diamond/compare/v1.15.0...v1.16.0) (2026-07-14)
 
 
