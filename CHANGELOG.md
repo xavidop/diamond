@@ -1,3 +1,10 @@
+## [1.16.4](https://github.com/xavidop/diamond/compare/v1.16.3...v1.16.4) (2026-07-22)
+
+
+### Bug Fixes
+
+* schedule timezone ([92a90e7](https://github.com/xavidop/diamond/commit/92a90e746e523c34a6399f42f0c99497f90724ad))
+
 ## [1.16.3](https://github.com/xavidop/diamond/compare/v1.16.2...v1.16.3) (2026-07-22)
 
 
