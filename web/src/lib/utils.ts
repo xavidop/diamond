@@ -14,13 +14,42 @@ export function fmtDate(d: string | Date, opts?: Intl.DateTimeFormatOptions) {
   }).format(date);
 }
 
-export function fmtTime(d: string | Date) {
+// League-standard timezone for game start times (MLB schedules in ET).
+const ET_ZONE = "America/New_York";
+
+// zoneAbbr returns the short timezone abbreviation (e.g. "EDT", "PDT") for the
+// given instant in the given zone, or the viewer's local zone when omitted.
+function zoneAbbr(date: Date, timeZone?: string) {
+  const parts = new Intl.DateTimeFormat(undefined, {
+    timeZone,
+    hour: "numeric",
+    timeZoneName: "short",
+  }).formatToParts(date);
+  return parts.find((p) => p.type === "timeZoneName")?.value ?? "";
+}
+
+// fmtGameTime mirrors the CLI's formatGameTime: always show the game's Eastern
+// (league) time, and append the viewer's local time + zone abbreviation only
+// when it differs — e.g. "9:07 PM ET · 6:07 PM PDT", or just "9:07 PM ET" for a
+// viewer already in Eastern.
+export function fmtGameTime(d: string | Date) {
   const date = typeof d === "string" ? new Date(d) : d;
-  return new Intl.DateTimeFormat(undefined, {
+  if (Number.isNaN(date.getTime())) return "";
+  const etTime = new Intl.DateTimeFormat(undefined, {
+    timeZone: ET_ZONE,
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
   }).format(date);
+  const et = `${etTime} ET`;
+  if (zoneAbbr(date, ET_ZONE) === zoneAbbr(date)) return et;
+  const local = new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZoneName: "short",
+  }).format(date);
+  return `${et} · ${local}`;
 }
 
 export function todayIso() {

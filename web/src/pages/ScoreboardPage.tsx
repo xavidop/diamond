@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { api, teamLogoUrl } from "../api/mlb";
 import { ErrorBox, SectionTitle, Spinner, Empty } from "../components/ui/Primitives";
-import { cn, fmtTime, shiftDate, todayIso } from "../lib/utils";
+import { cn, fmtGameTime, shiftDate, todayIso } from "../lib/utils";
 import { Link } from "react-router-dom";
 import { useSport } from "../contexts/SportContext";
 import NotifyButton from "../components/ui/NotifyButton";
@@ -148,7 +148,7 @@ function GameCard({ game }: { game: MlbGame }) {
       <div className="mt-3 flex items-center justify-between text-xs text-pitch-300/80">
         <div>
           {status === "Preview" && game.gameDate
-            ? fmtTime(game.gameDate)
+            ? fmtGameTime(game.gameDate)
             : ls?.inningState
             ? `${ls.inningState} ${ls.currentInningOrdinal ?? ""}`
             : detail}

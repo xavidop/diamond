@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { api, playerHeadshotUrl, teamLogoUrl } from "../../api/mlb";
 import { Card, Empty, Spinner } from "./Primitives";
-import { fmtDate, fmtTime, shiftDate, todayIso } from "../../lib/utils";
+import { fmtDate, fmtGameTime, shiftDate, todayIso } from "../../lib/utils";
 import { useSport } from "../../contexts/SportContext";
 
 export default function ProbablePitchers({ days = 3 }: { days?: number }) {
@@ -68,7 +68,7 @@ function ProbableCard({ game }: { game: any }) {
     >
       <div className="flex items-center justify-between gap-2 mb-3">
         <span className="pill truncate">{game.venue?.name ?? ""}</span>
-        <span className="pill shrink-0">{fmtTime(game.gameDate)}</span>
+        <span className="pill shrink-0">{fmtGameTime(game.gameDate)}</span>
       </div>
 
       <PitcherRow side={away} />

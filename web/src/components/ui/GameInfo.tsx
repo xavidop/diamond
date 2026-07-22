@@ -1,4 +1,5 @@
 import { Card } from "./Primitives";
+import { fmtGameTime } from "../../lib/utils";
 
 export default function GameInfo({ box, game }: { box: any; game: any }) {
   const rawInfo = (box?.info ?? []) as { label: string; value?: string }[];
@@ -42,15 +43,7 @@ export default function GameInfo({ box, game }: { box: any; game: any }) {
           {attendance != null && (
             <Row k="Attendance" v={attendance.toLocaleString()} />
           )}
-          {firstPitch && (
-            <Row
-              k="First pitch"
-              v={new Date(firstPitch).toLocaleTimeString([], {
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            />
-          )}
+          {firstPitch && <Row k="First pitch" v={fmtGameTime(firstPitch)} />}
           {length && <Row k="Length" v={`${length} min`} />}
         </Block>
 

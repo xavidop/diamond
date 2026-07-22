@@ -9,7 +9,7 @@ import {
   SectionTitle,
   Spinner,
 } from "../components/ui/Primitives";
-import { cn, fmtTime, todayIso, shiftDate, mergeRecentSpillover } from "../lib/utils";
+import { cn, fmtGameTime, todayIso, shiftDate, mergeRecentSpillover } from "../lib/utils";
 import { useSport } from "../contexts/SportContext";
 import { useFavorites } from "../contexts/FavoritesContext";
 import { usePins } from "../contexts/PinsContext";
@@ -330,7 +330,7 @@ function GameCard({ game }: { game: MlbGame }) {
         <div className="mt-2.5 pt-2.5 border-t border-white/5 flex items-center gap-1.5">
           <Clock size={12} className="text-volt-500 shrink-0" />
           <span className="font-display font-bold text-[11px] tracking-[0.1em] uppercase text-white/70 tabular-nums">
-            {fmtTime(game.gameDate)}
+            {fmtGameTime(game.gameDate)}
           </span>
           <span className="font-display font-bold text-[9px] tracking-[0.16em] uppercase text-white/25">
             · First pitch

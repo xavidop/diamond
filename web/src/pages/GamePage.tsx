@@ -19,7 +19,7 @@ import Highlights from "../components/ui/Highlights";
 import SectionNav from "../components/ui/SectionNav";
 import NotifyButton from "../components/ui/NotifyButton";
 import { Fragment, useState, type ReactNode } from "react";
-import { cn } from "../lib/utils";
+import { cn, fmtGameTime } from "../lib/utils";
 
 export default function GamePage() {
   const { gamePk } = useParams<{ gamePk: string }>();
@@ -54,6 +54,7 @@ export default function GamePage() {
   const homeScore = linescore?.teams?.home?.runs;
   const isLive = game?.status?.abstractGameState === "Live";
   const isFinal = game?.status?.abstractGameState === "Final";
+  const isPreview = !isLive && !isFinal;
 
   const sections: Record<string, ReactNode> = {
     linescore: <Linescore linescore={linescore} away={away} home={home} />,
@@ -131,15 +132,25 @@ export default function GamePage() {
               )}
               {game?.status?.detailedState ?? "—"}
             </div>
-            <div className="font-display text-3xl font-bold uppercase leading-none tracking-tight">
-              {linescore?.inningState ? `${linescore.inningState} ` : ""}
-              {linescore?.currentInningOrdinal ?? "—"}
-            </div>
-            <div className="flex items-center justify-center gap-3 font-mono text-xs tabular-nums text-pitch-300/80">
-              <span>B {linescore?.balls ?? 0}</span>
-              <span>S {linescore?.strikes ?? 0}</span>
-              <span>O {linescore?.outs ?? 0}</span>
-            </div>
+            {isPreview ? (
+              game?.datetime?.dateTime && (
+                <div className="font-display text-lg font-bold uppercase leading-tight tracking-tight tabular-nums text-balance">
+                  {fmtGameTime(game.datetime.dateTime)}
+                </div>
+              )
+            ) : (
+              <>
+                <div className="font-display text-3xl font-bold uppercase leading-none tracking-tight">
+                  {linescore?.inningState ? `${linescore.inningState} ` : ""}
+                  {linescore?.currentInningOrdinal ?? "—"}
+                </div>
+                <div className="flex items-center justify-center gap-3 font-mono text-xs tabular-nums text-pitch-300/80">
+                  <span>B {linescore?.balls ?? 0}</span>
+                  <span>S {linescore?.strikes ?? 0}</span>
+                  <span>O {linescore?.outs ?? 0}</span>
+                </div>
+              </>
+            )}
             <NotifyButton
               variant="button"
               className="mt-1"
