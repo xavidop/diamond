@@ -1,3 +1,10 @@
+## [1.16.2](https://github.com/xavidop/diamond/compare/v1.16.1...v1.16.2) (2026-07-22)
+
+
+### Bug Fixes
+
+* improved standings per league ([8b629f1](https://github.com/xavidop/diamond/commit/8b629f1193685907609bc28837a895243a0f60f5))
+
 ## [1.16.1](https://github.com/xavidop/diamond/compare/v1.16.0...v1.16.1) (2026-07-15)
 
 
