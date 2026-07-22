@@ -63,6 +63,25 @@ export default function StandingsPage() {
   const records = (data?.records ?? []) as any[];
   const wcRecords = (wildcard.data?.records ?? []) as any[];
 
+  // Group division records by league (first-seen order → AL then NL) so each
+  // league renders as its own vertical column instead of interleaving across
+  // the 2-col grid.
+  const leagueGroups = useMemo(() => {
+    const groups: { leagueId: number; league: any; records: any[] }[] = [];
+    const byId = new Map<number, (typeof groups)[number]>();
+    for (const rec of records) {
+      const lid = rec.league?.id;
+      let g = byId.get(lid);
+      if (!g) {
+        g = { leagueId: lid, league: leagueMap.get(lid), records: [] };
+        byId.set(lid, g);
+        groups.push(g);
+      }
+      g.records.push(rec);
+    }
+    return groups;
+  }, [records, leagueMap]);
+
   return (
     <div className="space-y-6">
       <SectionTitle
@@ -110,14 +129,20 @@ export default function StandingsPage() {
       )}
 
       {view === "division" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {records.map((rec) => (
-            <DivisionTable
-              key={`${rec.league?.id}-${rec.division?.id}`}
-              rec={rec}
-              league={leagueMap.get(rec.league?.id)}
-              division={divisionMap.get(rec.division?.id)}
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-8 items-start">
+          {leagueGroups.map((group) => (
+            <div key={group.leagueId} className="space-y-4">
+              <LeagueBanner league={group.league} rec={group.records[0]} />
+              {group.records.map((rec) => (
+                <DivisionTable
+                  key={`${rec.league?.id}-${rec.division?.id}`}
+                  rec={rec}
+                  league={leagueMap.get(rec.league?.id)}
+                  division={divisionMap.get(rec.division?.id)}
+                  showLeague={false}
+                />
+              ))}
+            </div>
           ))}
         </div>
       )}
@@ -164,14 +189,33 @@ function streakColor(code?: string) {
   return "";
 }
 
+function LeagueBanner({ league, rec }: { league?: any; rec?: any }) {
+  const name = league?.name ?? rec?.league?.name ?? "League";
+  const abbr = league?.abbreviation ?? rec?.league?.abbreviation;
+  return (
+    <div className="flex items-baseline justify-between gap-3 border-b-2 border-volt-500/60 pb-2">
+      <h3 className="font-display font-black text-xl sm:text-2xl uppercase tracking-tight text-white">
+        {name}
+      </h3>
+      {abbr && (
+        <span className="pill bg-volt-500/[0.12] text-volt-500 border-volt-500/30">
+          {abbr}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function DivisionTable({
   rec,
   league,
   division,
+  showLeague = true,
 }: {
   rec: any;
   league?: any;
   division?: any;
+  showLeague?: boolean;
 }) {
   const rows = (rec.teamRecords ?? []) as any[];
   const leagueName = league?.name ?? rec.league?.name;
@@ -183,13 +227,15 @@ function DivisionTable({
     <Card pad={false}>
       <div className="flex items-center justify-between p-4 border-b border-white/5">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-pitch-300/70">
-            {leagueName ?? "League"}
-          </div>
+          {showLeague && (
+            <div className="text-[10px] uppercase tracking-[0.18em] text-pitch-300/70">
+              {leagueName ?? "League"}
+            </div>
+          )}
           <div className="font-semibold text-white">{divisionName}</div>
         </div>
         <div className="flex items-center gap-1 text-xs">
-          {leagueAbbr && <span className="pill">{leagueAbbr}</span>}
+          {showLeague && leagueAbbr && <span className="pill">{leagueAbbr}</span>}
           {division?.abbreviation && (
             <span className="pill bg-pitch-800/40">
               {division.abbreviation}
