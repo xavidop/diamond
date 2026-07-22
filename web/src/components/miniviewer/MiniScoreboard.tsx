@@ -6,7 +6,7 @@ import { api, teamLogoUrl } from "../../api/mlb";
 import { useSport } from "../../contexts/SportContext";
 import { useMiniViewer } from "../../contexts/MiniViewerContext";
 import { Spinner, Empty } from "../ui/Primitives";
-import { todayIso } from "../../lib/utils";
+import { todayIso, shiftDate, mergeRecentSpillover } from "../../lib/utils";
 import {
   sortGames,
   pickDefaultGame,
@@ -19,14 +19,25 @@ export default function MiniScoreboard() {
   const { sportId } = useSport();
   const { selectedGamePk, selectGame, closeMini } = useMiniViewer();
   const date = todayIso();
+  const yesterday = shiftDate(date, -1);
 
   const schedule = useQuery({
     queryKey: ["schedule", sportId, date],
     queryFn: () => api.schedule({ date, sportId }),
     refetchInterval: 30_000,
   });
+  // Tonight's US games are filed under yesterday's date for viewers east of the
+  // US; pull in the live/just-finished/imminent ones so the mini viewer matches
+  // the Today page (see mergeRecentSpillover).
+  const yesterdaySchedule = useQuery({
+    queryKey: ["schedule", sportId, yesterday],
+    queryFn: () => api.schedule({ date: yesterday, sportId }),
+    refetchInterval: 30_000,
+  });
 
-  const games = sortGames((schedule.data?.dates?.[0]?.games ?? []) as MiniGame[]);
+  const todayGames = (schedule.data?.dates?.[0]?.games ?? []) as MiniGame[];
+  const yesterdayGames = (yesterdaySchedule.data?.dates?.[0]?.games ?? []) as MiniGame[];
+  const games = sortGames(mergeRecentSpillover(todayGames, yesterdayGames));
   const selected = games.find((g) => g.gamePk === selectedGamePk) ?? null;
 
   useEffect(() => {

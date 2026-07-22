@@ -25,6 +25,19 @@ describe("mergeRecentSpillover", () => {
     expect(ids).toEqual([1, 2, 3, 4]);
   });
 
+  it("keeps adjacent games starting soon (imminent upcoming), drops far-future", () => {
+    // For a viewer east of the US, this evening's US games are filed under the
+    // previous (adjacent) date and haven't started yet — they must still show.
+    const today = [game(1, "Preview", 18)]; // tomorrow's slate, primary → always kept
+    const yesterday = [
+      game(10, "Preview", 1), // starts in 1h → imminent → kept
+      game(11, "Preview", 5), // starts in 5h → within upcoming window → kept
+      game(12, "Preview", 8), // starts in 8h → beyond upcoming window → dropped
+    ];
+    const out = mergeRecentSpillover(today, yesterday, NOW);
+    expect(out.map((g) => g.gamePk).sort((a, b) => a - b)).toEqual([1, 10, 11]);
+  });
+
   it("excludes finished games with no/unparseable date but keeps live", () => {
     const yesterday: SpilloverGame[] = [
       { gamePk: 6, status: { abstractGameState: "Final" } },

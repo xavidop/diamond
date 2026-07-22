@@ -51,6 +51,32 @@ func TestMergeRecentSpillover(t *testing.T) {
 	}
 }
 
+// Adjacent-slate games that haven't started yet but begin soon (this evening's
+// US slate for a viewer east of the US) must be included, while games further
+// out are left for their own day.
+func TestMergeRecentSpilloverUpcoming(t *testing.T) {
+	now := time.Date(2026, 6, 27, 8, 0, 0, 0, time.UTC)
+	yesterday := []Game{
+		spilloverGameAt(10, "Preview", now.Add(1*time.Hour)), // imminent → included
+		spilloverGameAt(11, "Preview", now.Add(5*time.Hour)), // within window → included
+		spilloverGameAt(12, "Preview", now.Add(8*time.Hour)), // too far out → excluded
+	}
+	out := MergeRecentSpillover(nil, yesterday, now)
+	has := map[int]bool{}
+	for _, g := range out {
+		has[g.GamePk] = true
+	}
+	if !has[10] {
+		t.Fatal("imminent upcoming spillover game 10 should be included")
+	}
+	if !has[11] {
+		t.Fatal("soon upcoming spillover game 11 should be included")
+	}
+	if has[12] {
+		t.Fatal("far-future spillover game 12 must be excluded")
+	}
+}
+
 // A Final game with an unparseable date falls back to the live-only rule.
 func TestMergeRecentSpilloverBadDate(t *testing.T) {
 	now := time.Date(2026, 6, 27, 8, 0, 0, 0, time.UTC)

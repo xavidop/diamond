@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { api, teamLogoUrl } from "../api/mlb";
 import { ErrorBox, SectionTitle, Spinner, Empty } from "../components/ui/Primitives";
-import { cn, fmtGameTime, shiftDate, todayIso } from "../lib/utils";
+import { cn, fmtGameTime, shiftDate, todayIso, mergeRecentSpillover } from "../lib/utils";
 import { Link } from "react-router-dom";
 import { useSport } from "../contexts/SportContext";
 import NotifyButton from "../components/ui/NotifyButton";
@@ -36,17 +36,30 @@ type MlbGame = {
 export default function ScoreboardPage() {
   const [date, setDate] = useState(todayIso());
   const { sportId, sport } = useSport();
+  const isToday = date === todayIso();
+  const yesterday = shiftDate(date, -1);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["schedule", sportId, date],
     queryFn: () => api.schedule({ date, sportId }),
     refetchInterval: 30_000,
   });
+  // On "today", tonight's US games are filed under yesterday's date for viewers
+  // east of the US; pull in the live/just-finished/imminent ones (see
+  // mergeRecentSpillover). Other dates show exactly that day's slate.
+  const yesterdayQuery = useQuery({
+    queryKey: ["schedule", sportId, yesterday],
+    queryFn: () => api.schedule({ date: yesterday, sportId }),
+    refetchInterval: 30_000,
+    enabled: isToday,
+  });
 
   const games = useMemo(() => {
-    const d = (data?.dates ?? [])[0];
-    return (d?.games ?? []) as MlbGame[];
-  }, [data]);
+    const todayGames = ((data?.dates ?? [])[0]?.games ?? []) as MlbGame[];
+    if (!isToday) return todayGames;
+    const yGames = ((yesterdayQuery.data?.dates ?? [])[0]?.games ?? []) as MlbGame[];
+    return mergeRecentSpillover(todayGames, yGames);
+  }, [data, yesterdayQuery.data, isToday]);
 
   return (
     <div className="space-y-6">

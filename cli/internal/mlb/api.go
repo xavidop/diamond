@@ -25,38 +25,46 @@ func (c *Client) Schedule(date string, sportID int) ([]Game, error) {
 	return resp.Dates[0].Games, nil
 }
 
-// spilloverWindow bounds how far back a finished adjacent-day game can have
+// spilloverPast bounds how far back a finished adjacent-day game can have
 // started and still count as part of "today". MLB's game day spans US evening
 // into the early morning; a single slate's games all start within ~12h, so 12h
 // keeps the current/just-past slate without dragging in a full stale slate.
-const spilloverWindow = 12 * time.Hour
+const spilloverPast = 12 * time.Hour
+
+// spilloverUpcoming bounds how far into the future an adjacent-slate game may
+// start and still count as "today". For a viewer east of the US, this evening's
+// US games are filed under the previous local date and haven't started yet, so
+// they'd otherwise be dropped; a slate's remaining games all begin within a few
+// hours.
+const spilloverUpcoming = 6 * time.Hour
 
 // MergeRecentSpillover returns primary plus any game from adjacent that is part
-// of the same rolling game window and not already present: still Live, or
-// started within spilloverWindow of now. The MLB schedule files a game under
-// the US date it's played, so for a user east of the US (e.g. Spain) a game
-// that started before their local midnight lands under the previous local date.
-// Keying off the game's absolute start time (gameDate, UTC) rather than the
-// local calendar date keeps those games — live OR just-finished — visible on
-// "today" regardless of the viewer's timezone, instead of vanishing at local
-// midnight in favor of the next slate.
+// of the same rolling game window and not already present: still Live, started
+// within spilloverPast of now, or starting within spilloverUpcoming. The MLB
+// schedule files a game under the US date it's played, so for a user east of
+// the US (e.g. Spain) tonight's US games land under the previous local date —
+// live, just finished, or about to start. Keying off the game's absolute start
+// time (gameDate, UTC) rather than the local calendar date keeps them visible
+// on "today" regardless of the viewer's timezone, instead of the view jumping
+// to the next slate at local midnight and hiding games that are on or imminent.
 func MergeRecentSpillover(primary, adjacent []Game, now time.Time) []Game {
 	seen := make(map[int]bool, len(primary))
 	for _, g := range primary {
 		seen[g.GamePk] = true
 	}
 	out := append([]Game{}, primary...)
-	cutoff := now.Add(-spilloverWindow)
+	past := now.Add(-spilloverPast)
+	ahead := now.Add(spilloverUpcoming)
 	for _, g := range adjacent {
 		if seen[g.GamePk] {
 			continue
 		}
 		keep := g.Status.AbstractGameState == "Live"
 		if !keep {
-			// A non-live adjacent game counts only if it actually started
-			// within the window (covers games that just went Final).
+			// A non-live adjacent game counts if it started recently (just went
+			// Final) or is about to start (this evening's US slate).
 			if start, err := time.Parse(time.RFC3339, g.GameDate); err == nil {
-				keep = !start.Before(cutoff) && !start.After(now)
+				keep = !start.Before(past) && !start.After(ahead)
 			}
 		}
 		if keep {

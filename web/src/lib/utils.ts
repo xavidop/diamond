@@ -72,16 +72,22 @@ export type SpilloverGame = {
 
 // A single MLB slate's games all start within ~12h; this bounds how far back a
 // finished adjacent-day game can have started and still count as "today".
-const SPILLOVER_WINDOW_MS = 12 * 60 * 60 * 1000;
+const SPILLOVER_PAST_MS = 12 * 60 * 60 * 1000;
+// How far into the future an adjacent-slate game may start and still count as
+// "today": for a viewer east of the US, this evening's US games are filed under
+// the previous local date and haven't started yet, so they'd otherwise be
+// dropped. One slate's remaining games all begin within a few hours.
+const SPILLOVER_UPCOMING_MS = 6 * 60 * 60 * 1000;
 
 // mergeRecentSpillover returns primary plus any adjacent-day game that belongs
-// to the same rolling window and isn't already present: still Live, or started
-// within the last 12h. The MLB schedule files a game under the US date it's
-// played, so for a viewer east of the US (e.g. Spain) a game that started
-// before their local midnight lands under the previous local date. Keying off
-// the game's absolute start time (gameDate, UTC) instead of the local calendar
-// date keeps those games — live OR just-finished — on "today" regardless of
-// timezone, rather than vanishing at local midnight for the next slate.
+// to the same rolling window and isn't already present: still Live, started
+// within the last 12h, or starting within the next 6h. The MLB schedule files
+// a game under the US date it's played, so for a viewer east of the US (e.g.
+// Spain) tonight's US games land under the previous local date — live, just
+// finished, or about to start. Keying off the game's absolute start time
+// (gameDate, UTC) rather than the local calendar date keeps them on "today"
+// regardless of timezone, instead of the page jumping to the next slate at
+// local midnight and hiding games that are on now or imminent.
 export function mergeRecentSpillover<T extends SpilloverGame>(
   primary: T[],
   adjacent: T[],
@@ -90,13 +96,14 @@ export function mergeRecentSpillover<T extends SpilloverGame>(
   const seen = new Set(primary.map((g) => g.gamePk));
   const out = [...primary];
   const nowMs = now.getTime();
-  const cutoff = nowMs - SPILLOVER_WINDOW_MS;
+  const past = nowMs - SPILLOVER_PAST_MS;
+  const ahead = nowMs + SPILLOVER_UPCOMING_MS;
   for (const g of adjacent) {
     if (seen.has(g.gamePk)) continue;
     let keep = g.status?.abstractGameState === "Live";
     if (!keep && g.gameDate) {
       const start = new Date(g.gameDate).getTime();
-      keep = !Number.isNaN(start) && start >= cutoff && start <= nowMs;
+      keep = !Number.isNaN(start) && start >= past && start <= ahead;
     }
     if (keep) {
       out.push(g);

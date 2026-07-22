@@ -9,6 +9,7 @@ export type MiniGame = {
   status?: { abstractGameState?: string };
   teams?: { away?: SideT; home?: SideT };
   linescore?: { currentInningOrdinal?: string; inningState?: string };
+  gameDate?: string;
 };
 
 const RANK: Record<string, number> = { Live: 0, Preview: 1, Final: 2 };
