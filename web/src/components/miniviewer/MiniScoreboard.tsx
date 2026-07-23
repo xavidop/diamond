@@ -9,6 +9,7 @@ import { Spinner, Empty } from "../ui/Primitives";
 import { todayIso } from "../../lib/utils";
 import { useLocalDaySchedule } from "../../hooks/useLocalDaySchedule";
 import { useElementWidth } from "../../hooks/useElementWidth";
+import { useMiniShortcuts } from "../../hooks/useMiniShortcuts";
 import { pitcherLine, batterLine } from "../../lib/miniBoxscore";
 import { sortGames, pickDefaultGame, isLive, type MiniGame } from "../../lib/miniviewer";
 import type { MiniMode } from "../../lib/miniStorage";
@@ -28,7 +29,7 @@ function useNow(active: boolean): number {
 
 export default function MiniScoreboard() {
   const { sportId } = useSport();
-  const { selectedGamePk, selectGame, closeMini, mode, setMode } = useMiniViewer();
+  const { selectedGamePk, selectGame, closeMini, mode, setMode, pipWindow } = useMiniViewer();
   const date = todayIso();
 
   // Same local-day bucketing as the Today page so the two always agree.
@@ -77,6 +78,16 @@ export default function MiniScoreboard() {
   const [rootRef, width] = useElementWidth();
   // Below ~320px the headshots and full-size grid stop fitting.
   const compact = width > 0 && width < 320;
+
+  useMiniShortcuts({
+    doc: pipWindow?.document ?? (typeof document === "undefined" ? null : document),
+    games,
+    selectedGamePk,
+    onSelect: selectGame,
+    mode,
+    setMode,
+    onClose: closeMini,
+  });
 
   return (
     <div ref={rootRef} className="diamond-mini diamond-chrome flex h-full flex-col bg-pitch-950 font-sans text-sm text-white">
