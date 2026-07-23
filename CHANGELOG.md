@@ -1,3 +1,27 @@
+# [1.17.0](https://github.com/xavidop/diamond/compare/v1.16.7...v1.17.0) (2026-07-23)
+
+
+### Bug Fixes
+
+* correct unfilled pip light-mode visibility and add single-runner tests ([b9eade6](https://github.com/xavidop/diamond/commit/b9eade641e9d7e6214ff1b3a68a5c9f8bbb498a0))
+* **miniviewer:** make the fallback panel resizable and viewport-clamped ([89aa32b](https://github.com/xavidop/diamond/commit/89aa32b1f7d882887c7f3e24b8d5b6c0c02475ab))
+
+
+### Features
+
+* **api:** add daySchedule with probable-pitcher stats for the day slate ([6a794be](https://github.com/xavidop/diamond/commit/6a794be76f2dad2fad0b11c0c8ab501c7b616329))
+* **miniviewer:** adapt layout to the window width ([3274f98](https://github.com/xavidop/diamond/commit/3274f98cafeb03766ef452f2c46a935d5adbfca4))
+* **miniviewer:** add deriveGameState and reorder the game sort ([cca04b3](https://github.com/xavidop/diamond/commit/cca04b399bc539d0e3cdc2138dcd9083c6f7d7bc))
+* **miniviewer:** add focus and slate views ([d5053f5](https://github.com/xavidop/diamond/commit/d5053f5cca4b4a32a685f6a12e3f938e4a59a516))
+* **miniviewer:** add keyboard navigation inside the viewer ([e63fb25](https://github.com/xavidop/diamond/commit/e63fb2514ad8f5c088d5ccb2f84d53f30e89fb18))
+* **miniviewer:** add score, status and detail bands for focus mode ([46e7a2d](https://github.com/xavidop/diamond/commit/46e7a2d28b6f0270bf0be042c70f3720f24a40fc))
+* **miniviewer:** add shared diamond, pips and logo primitives ([9cea5cf](https://github.com/xavidop/diamond/commit/9cea5cf4dbedd09762bf0b7b1c221af9e0584ea6))
+* **miniviewer:** add shared game row and linescore grid ([87670ca](https://github.com/xavidop/diamond/commit/87670ca8891256cf1266ac810e3474764e480d0e))
+* **miniviewer:** add slate grouping and countdown formatting ([f1ad365](https://github.com/xavidop/diamond/commit/f1ad3658bca4c27fc952dc3afc4a181d92f97112))
+* **miniviewer:** extract pitcher and batter stat lines from a boxscore ([4f011fa](https://github.com/xavidop/diamond/commit/4f011fa228bc6be9a58e0c4892175e58a3724a4b))
+* **miniviewer:** persist mode and selected game ([4fefb8a](https://github.com/xavidop/diamond/commit/4fefb8a4c2a0344f5b3f9d5c8f17bc02407c795d))
+* **miniviewer:** rebuild the scoreboard shell with focus and slate modes ([98ac420](https://github.com/xavidop/diamond/commit/98ac420fe1ad763c43b630b0a6a3975fda1b005e))
+
 ## [1.16.7](https://github.com/xavidop/diamond/compare/v1.16.6...v1.16.7) (2026-07-23)
 
 
