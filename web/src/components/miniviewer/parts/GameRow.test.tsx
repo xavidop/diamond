@@ -47,7 +47,7 @@ describe("GameRow", () => {
   it("shows a start time for upcoming games and no diamond", () => {
     render(<GameRow game={upcoming} selected={false} onSelect={() => {}} variant="line" />);
     expect(screen.queryByLabelText(/Bases|Runner/)).toBeNull();
-    expect(screen.getByText(/PM/)).toBeTruthy();
+    expect(screen.getByText(/ET/)).toBeTruthy();
   });
 
   it("shows Final for finished games", () => {
