@@ -1,3 +1,10 @@
+## [1.17.1](https://github.com/xavidop/diamond/compare/v1.17.0...v1.17.1) (2026-07-23)
+
+
+### Bug Fixes
+
+* use ts 6 ([e771000](https://github.com/xavidop/diamond/commit/e77100095119eee0099efc92392469cbd6ac8953))
+
 # [1.17.0](https://github.com/xavidop/diamond/compare/v1.16.7...v1.17.0) (2026-07-23)
 
 
