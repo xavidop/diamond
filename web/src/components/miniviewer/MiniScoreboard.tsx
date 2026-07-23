@@ -8,6 +8,7 @@ import { useMiniViewer } from "../../contexts/MiniViewerContext";
 import { Spinner, Empty } from "../ui/Primitives";
 import { todayIso } from "../../lib/utils";
 import { useLocalDaySchedule } from "../../hooks/useLocalDaySchedule";
+import { useElementWidth } from "../../hooks/useElementWidth";
 import { pitcherLine, batterLine } from "../../lib/miniBoxscore";
 import { sortGames, pickDefaultGame, isLive, type MiniGame } from "../../lib/miniviewer";
 import type { MiniMode } from "../../lib/miniStorage";
@@ -73,8 +74,12 @@ export default function MiniScoreboard() {
     batter: batterLine(boxQ.data, ls?.offense?.batter?.id),
   };
 
+  const [rootRef, width] = useElementWidth();
+  // Below ~320px the headshots and full-size grid stop fitting.
+  const compact = width > 0 && width < 320;
+
   return (
-    <div className="diamond-mini diamond-chrome flex h-full flex-col bg-pitch-950 font-sans text-sm text-white">
+    <div ref={rootRef} className="diamond-mini diamond-chrome flex h-full flex-col bg-pitch-950 font-sans text-sm text-white">
       <header className="flex shrink-0 items-center gap-2 border-b border-white/10 px-3 py-2">
         {games.some(isLive) && (
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-volt-500 shadow-glow-volt" aria-hidden />
@@ -111,6 +116,7 @@ export default function MiniScoreboard() {
               stats={stats}
               now={now}
               liveLinescore={live ? lineQ.data : undefined}
+              compact={compact}
             />
           ) : (
             <SlateView games={games} selectedGamePk={selectedGamePk} onSelect={(pk) => { selectGame(pk); setMode("focus"); }} />
