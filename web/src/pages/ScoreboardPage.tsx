@@ -162,7 +162,7 @@ function GameCard({ game }: { game: MlbGame }) {
       <TeamRow team={away} score={away?.score} isWinner={isFinal && away?.isWinner} />
       <TeamRow team={home} score={home?.score} isWinner={isFinal && home?.isWinner} />
 
-      <div className="mt-3 flex items-center justify-between text-xs text-pitch-300/80">
+      <div className="mt-3 flex flex-col gap-1 text-xs text-pitch-300/80 sm:flex-row sm:items-center sm:justify-between">
         <div className="tabular-nums">
           {game.gameDate ? fmtGameTime(game.gameDate) : detail}
         </div>

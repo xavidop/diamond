@@ -28,10 +28,12 @@ function zoneAbbr(date: Date, timeZone?: string) {
   return parts.find((p) => p.type === "timeZoneName")?.value ?? "";
 }
 
-// dayOffset returns " +1" / " -1" when the viewer's local calendar day for the
-// instant differs from the game's Eastern (game-day) date, so a late game that
-// lands after local midnight reads e.g. "12:40 AM CEST +1".
-function dayOffset(date: Date): string {
+// localDayLabel returns the viewer's local weekday (e.g. "Fri") when the local
+// calendar day for the instant differs from the game's Eastern (game-day) date,
+// so a game after local midnight reads "1:15 AM CEST · Fri". Empty on the same
+// day. A weekday keeps a numeric GMT offset ("GMT+2") from colliding with a
+// "+1" day marker.
+function localDayLabel(date: Date): string {
   const isoDate = (timeZone?: string) =>
     new Intl.DateTimeFormat("en-CA", {
       timeZone,
@@ -39,18 +41,15 @@ function dayOffset(date: Date): string {
       month: "2-digit",
       day: "2-digit",
     }).format(date);
-  const diff = Math.round(
-    (Date.parse(isoDate()) - Date.parse(isoDate(ET_ZONE))) / 86_400_000,
-  );
-  if (diff === 0) return "";
-  return diff > 0 ? ` +${diff}` : ` ${diff}`;
+  if (isoDate() === isoDate(ET_ZONE)) return "";
+  return new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(date);
 }
 
 // fmtGameTime mirrors the CLI's formatGameTime: always show the game's Eastern
 // (league) time, and append the viewer's local time + zone abbreviation only
 // when it differs — e.g. "9:07 PM ET · 6:07 PM PDT", or just "9:07 PM ET" for a
 // viewer already in Eastern. When the local time falls on a different calendar
-// day than the Eastern game day, it gets a "+1"/"-1" suffix.
+// day than the Eastern game day, the local weekday is appended.
 export function fmtGameTime(d: string | Date) {
   const date = typeof d === "string" ? new Date(d) : d;
   if (Number.isNaN(date.getTime())) return "";
@@ -68,7 +67,8 @@ export function fmtGameTime(d: string | Date) {
     hour12: true,
     timeZoneName: "short",
   }).format(date);
-  return `${et} · ${local}${dayOffset(date)}`;
+  const dayLabel = localDayLabel(date);
+  return `${et} · ${local}${dayLabel ? ` · ${dayLabel}` : ""}`;
 }
 
 export function todayIso() {

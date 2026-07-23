@@ -14,8 +14,9 @@ import (
 
 // formatGameTime returns the game start time in ET, appending local time when
 // the user's timezone differs from Eastern. When the local time lands on a
-// different calendar day than the Eastern game day it gets a "+1"/"-1" suffix
-// (e.g. a 6:40 PM ET game reads "6:40 PM ET · 12:40 AM CEST +1").
+// different calendar day than the Eastern game day, the local weekday is
+// appended (e.g. a 6:40 PM ET game reads "6:40 PM ET · 12:40 AM GMT+2 · Fri") —
+// a weekday avoids a "+1" colliding with a numeric GMT offset.
 func formatGameTime(gameDate string) string {
 	t, err := time.Parse(time.RFC3339, gameDate)
 	if err != nil {
@@ -29,14 +30,8 @@ func formatGameTime(gameDate string) string {
 		return etStr
 	}
 	local := t.In(time.Local).Format("3:04 PM MST")
-	if etDay, localDay := t.In(et).Format("2006-01-02"), t.In(time.Local).Format("2006-01-02"); etDay != localDay {
-		ed, _ := time.Parse("2006-01-02", etDay)
-		ld, _ := time.Parse("2006-01-02", localDay)
-		if diff := int(ld.Sub(ed).Hours() / 24); diff > 0 {
-			local += fmt.Sprintf(" +%d", diff)
-		} else {
-			local += fmt.Sprintf(" %d", diff)
-		}
+	if t.In(et).Format("2006-01-02") != t.In(time.Local).Format("2006-01-02") {
+		local += " · " + t.In(time.Local).Format("Mon")
 	}
 	return etStr + " · " + local
 }

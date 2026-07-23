@@ -322,7 +322,7 @@ function GameCard({ game }: { game: MlbGame }) {
       })}
 
       {game.gameDate && (
-        <div className="mt-2.5 pt-2.5 border-t border-white/5 flex items-center gap-1.5">
+        <div className="mt-2.5 pt-2.5 border-t border-white/5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
           <Clock size={12} className="text-volt-500 shrink-0" />
           <span className="font-display font-bold text-[11px] tracking-[0.1em] uppercase text-white/70 tabular-nums">
             {fmtGameTime(game.gameDate)}
