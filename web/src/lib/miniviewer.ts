@@ -261,3 +261,50 @@ export function deriveGameState(
     probables: { away: probable(game.teams?.away), home: probable(game.teams?.home) },
   };
 }
+
+export type SlateGroup = {
+  key: "live" | "final" | "upcoming";
+  label: string;
+  games: MiniGame[];
+};
+
+const GROUP_OF: Record<string, SlateGroup["key"]> = {
+  Live: "live",
+  Final: "final",
+  Preview: "upcoming",
+};
+
+const GROUP_ORDER: { key: SlateGroup["key"]; title: string }[] = [
+  { key: "live", title: "Live" },
+  { key: "final", title: "Final" },
+  { key: "upcoming", title: "Upcoming" },
+];
+
+function startMs(g: MiniGame): number {
+  const t = g.gameDate ? Date.parse(g.gameDate) : NaN;
+  return Number.isNaN(t) ? Number.MAX_SAFE_INTEGER : t;
+}
+
+/** Bucket the slate into Live / Final / Upcoming, each ordered by start time. */
+export function groupGames(games: MiniGame[]): SlateGroup[] {
+  return GROUP_ORDER.map(({ key, title }) => {
+    const inGroup = games
+      .filter((g) => (GROUP_OF[g.status?.abstractGameState ?? ""] ?? "upcoming") === key)
+      .sort((a, b) => startMs(a) - startMs(b));
+    return { key, label: `${title} · ${inGroup.length}`, games: inGroup };
+  }).filter((s) => s.games.length > 0);
+}
+
+/**
+ * "2:14:38" / "9:05" / "0:00". Returns "" past 24 hours, which tells the caller
+ * to render an absolute date instead of a running clock.
+ */
+export function formatCountdown(ms: number): string {
+  if (ms > 24 * 3600_000) return "";
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}

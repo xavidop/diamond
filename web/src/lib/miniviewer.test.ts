@@ -5,6 +5,8 @@ import {
   isLive,
   basesFromOffense,
   deriveGameState,
+  groupGames,
+  formatCountdown,
   type MiniGame,
 } from "./miniviewer";
 
@@ -186,5 +188,56 @@ describe("deriveGameState", () => {
     const s = deriveGameState(noAbbr as MiniGame);
     expect(s.away.name).toBe("Kansas City Royals");
     expect(s.away.record).toBe("");
+  });
+});
+
+describe("groupGames", () => {
+  const at = (pk: number, state: string, iso: string): MiniGame => ({
+    gamePk: pk,
+    status: { abstractGameState: state },
+    gameDate: iso,
+  });
+
+  it("groups live, final, upcoming in that order with counts", () => {
+    const out = groupGames([
+      at(1, "Preview", "2026-07-23T23:07:00Z"),
+      at(2, "Final", "2026-07-23T17:10:00Z"),
+      at(3, "Live", "2026-07-23T20:10:00Z"),
+    ]);
+    expect(out.map((s) => s.key)).toEqual(["live", "final", "upcoming"]);
+    expect(out.map((s) => s.label)).toEqual(["Live · 1", "Final · 1", "Upcoming · 1"]);
+  });
+
+  it("orders games inside a group by start time", () => {
+    const out = groupGames([
+      at(1, "Preview", "2026-07-24T01:45:00Z"),
+      at(2, "Preview", "2026-07-23T23:07:00Z"),
+    ]);
+    expect(out[0].games.map((g) => g.gamePk)).toEqual([2, 1]);
+  });
+
+  it("omits empty groups", () => {
+    const out = groupGames([at(3, "Live", "2026-07-23T20:10:00Z")]);
+    expect(out).toHaveLength(1);
+    expect(out[0].key).toBe("live");
+  });
+
+  it("returns nothing for an empty slate", () => {
+    expect(groupGames([])).toEqual([]);
+  });
+});
+
+describe("formatCountdown", () => {
+  it("formats hours, minutes and seconds", () => {
+    expect(formatCountdown(2 * 3600_000 + 14 * 60_000 + 38_000)).toBe("2:14:38");
+  });
+  it("drops the hour segment under an hour", () => {
+    expect(formatCountdown(9 * 60_000 + 5_000)).toBe("9:05");
+  });
+  it("clamps at zero", () => {
+    expect(formatCountdown(-5000)).toBe("0:00");
+  });
+  it("returns an empty string beyond 24 hours so the caller shows a date instead", () => {
+    expect(formatCountdown(25 * 3600_000)).toBe("");
   });
 });
