@@ -258,6 +258,20 @@
   html.light .diamond-mini [class*="border-white/"] { border-color: rgba(0,0,0,0.1) !important; }
   html.light .diamond-mini [class*="divide-white/"] > :not([hidden]) ~ :not([hidden]) { border-color: rgba(0,0,0,0.08) !important; }
   html.light .diamond-mini [class~="bg-white/10"] { background-color: rgba(0,0,0,0.07) !important; }
+  /* [class~=...] is an exact-token match, unlike the substring match used for
+     border/divide above, so every distinct bg-white/<opacity> used across the
+     mini viewer needs its own rule here or it gets no light-mode treatment at
+     all (invisible/wrong tint on the cream surface). Kept monotonic with the
+     white-opacity ladder above. */
+  html.light .diamond-mini [class~="bg-white/[0.03]"] { background-color: rgba(0,0,0,0.03) !important; }
+  html.light .diamond-mini [class~="bg-white/[0.045]"] { background-color: rgba(0,0,0,0.04) !important; }
+  html.light .diamond-mini [class~="bg-white/5"] { background-color: rgba(0,0,0,0.045) !important; }
+  /* The Tailwind hover variant is its own literal class token ("hover:bg-white/5"),
+     not "bg-white/5" plus a separate hover state, so it needs its own selector +
+     :hover — the bg-white/5 rule above does not match it. (GameRow row hover.) */
+  html.light .diamond-mini [class~="hover:bg-white/5"]:hover { background-color: rgba(0,0,0,0.045) !important; }
+  html.light .diamond-mini [class~="bg-white/[0.06]"] { background-color: rgba(0,0,0,0.05) !important; }
+  html.light .diamond-mini [class~="bg-white/[0.07]"] { background-color: rgba(0,0,0,0.06) !important; }
 
   /* DiamondGPT assistant bubble: prose-invert assumes a dark surface, so in
      light mode its body/heading/strong/link/code colors stay light and wash

@@ -12,7 +12,8 @@
     "dev:server": "tsx watch server/index.ts",
     "start": "tsx server/index.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@genkit-ai/anthropic": "^0.3.0",

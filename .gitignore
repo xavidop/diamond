@@ -32,3 +32,7 @@ cli/diamond
 docs/superpowers
 
 .firebase
+
+# Playwright
+web/test-results/
+web/playwright-report/
