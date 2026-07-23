@@ -3,13 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/mlb";
 import { shiftDate, gamesForDay, todayIso, type DatedGame } from "../lib/utils";
 
-// useLocalDaySchedule returns the games that belong to the given local calendar
-// date (YYYY-MM-DD). MLB files a game under its US date, so a game can land in
-// an adjacent US slate for a viewer far from Eastern; we fetch the day before,
-// the day itself, and the day after, then bucket each game by the viewer's
-// local day (live games count as today, finished games stay on the day they
-// were played). Query keys match the other schedule fetches, so the three
-// slates are shared/cached across the app.
+// useLocalDaySchedule returns the MLB slate for the given date (YYYY-MM-DD) —
+// the games the API files under that day, shown as-is. When the date is today
+// it also folds in any currently-live game filed under the day before/after, so
+// an active game in another timezone still shows. The neighbouring slates are
+// fetched with the same query keys as the rest of the app, so they're cached.
 export function useLocalDaySchedule<T extends DatedGame = DatedGame>(
   dateIso: string,
   sportId: number,
@@ -30,15 +28,15 @@ export function useLocalDaySchedule<T extends DatedGame = DatedGame>(
     refetchInterval: 30_000,
   });
 
-  const today = todayIso();
+  const isToday = dateIso === todayIso();
   const games = useMemo(() => {
-    const all = [
+    const slate = (curQ.data?.dates?.[0]?.games ?? []) as T[];
+    const neighbors = [
       ...((prevQ.data?.dates?.[0]?.games ?? []) as T[]),
-      ...((curQ.data?.dates?.[0]?.games ?? []) as T[]),
       ...((nextQ.data?.dates?.[0]?.games ?? []) as T[]),
     ];
-    return gamesForDay(all, dateIso, today);
-  }, [prevQ.data, curQ.data, nextQ.data, dateIso, today]);
+    return gamesForDay(slate, neighbors, isToday);
+  }, [prevQ.data, curQ.data, nextQ.data, isToday]);
 
   return { games, isLoading: curQ.isLoading, error: curQ.error };
 }

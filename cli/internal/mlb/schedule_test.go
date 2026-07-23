@@ -77,13 +77,6 @@ func TestMergeRecentSpilloverUpcoming(t *testing.T) {
 	}
 }
 
-func gameAt(pk int, state, detailed string, start time.Time) Game {
-	g := spilloverGame(pk, state)
-	g.Status.DetailedState = detailed
-	g.GameDate = start.Format(time.RFC3339)
-	return g
-}
-
 func ids(games []Game) map[int]bool {
 	out := map[int]bool{}
 	for _, g := range games {
@@ -92,47 +85,31 @@ func ids(games []Game) map[int]bool {
 	return out
 }
 
-// GamesForDay buckets live games onto today and finished/upcoming games onto
-// the local day they started.
+// GamesForDay shows the day's slate as-is and, only when the date is today,
+// folds in currently-live games from the neighbouring days.
 func TestGamesForDay(t *testing.T) {
-	base := time.Date(2026, 6, 27, 12, 0, 0, 0, time.UTC)
-	day := base.In(time.Local).Format("2006-01-02")
-	next := base.Add(48 * time.Hour).In(time.Local).Format("2006-01-02")
-
-	games := []Game{
-		gameAt(10, "Final", "Final", base),                         // finished today → day
-		gameAt(11, "Live", "In Progress", base.Add(-48*time.Hour)), // live, started 2 days ago → today
-		gameAt(12, "Final", "Final", base.Add(48*time.Hour)),       // finished, started 2 days later → next
+	slate := []Game{
+		spilloverGame(1, "Final"),
+		spilloverGame(1, "Final"), // duplicate GamePk → deduped
+		spilloverGame(2, "Preview"),
+	}
+	neighbors := []Game{
+		spilloverGame(3, "Live"),    // active in another timezone → shown today
+		spilloverGame(4, "Final"),   // finished on its own day → not folded in
+		spilloverGame(5, "Preview"), // upcoming on its own day → not folded in
 	}
 
-	onDay := ids(GamesForDay(games, day, day))
-	if !onDay[10] || !onDay[11] {
-		t.Fatalf("expected games 10 (final today) and 11 (live→today) on %s, got %+v", day, onDay)
+	today := ids(GamesForDay(slate, neighbors, true))
+	if !today[1] || !today[2] || !today[3] {
+		t.Fatalf("today should include the slate (1,2) plus the live neighbor (3), got %+v", today)
 	}
-	if onDay[12] {
-		t.Fatal("a game that started two days later must not appear on today")
+	if today[4] || today[5] {
+		t.Fatal("finished/upcoming neighbors must not be folded into today")
 	}
-	onNext := GamesForDay(games, next, day)
-	if len(onNext) != 1 || onNext[0].GamePk != 12 {
-		t.Fatalf("expected only game 12 on %s, got %+v", next, ids(onNext))
-	}
-}
 
-// A postponed ghost must lose dedup to the real replayed entry, so the game
-// shows only on the day it was actually played.
-func TestGamesForDayGhost(t *testing.T) {
-	base := time.Date(2026, 6, 27, 12, 0, 0, 0, time.UTC)
-	day := base.In(time.Local).Format("2006-01-02")
-	next := base.Add(48 * time.Hour).In(time.Local).Format("2006-01-02")
-
-	ghost := gameAt(1, "Preview", "Postponed", base)            // buckets to day by start
-	real := gameAt(1, "Final", "Final", base.Add(48*time.Hour)) // real replay → next
-
-	if got := GamesForDay([]Game{ghost, real}, day, day); len(got) != 0 {
-		t.Fatalf("postponed ghost must not appear on its original day, got %+v", ids(got))
-	}
-	if got := GamesForDay([]Game{ghost, real}, next, day); len(got) != 1 || got[0].GamePk != 1 {
-		t.Fatalf("real replayed game should appear on its day, got %+v", ids(got))
+	notToday := ids(GamesForDay(slate, neighbors, false))
+	if len(notToday) != 2 || !notToday[1] || !notToday[2] {
+		t.Fatalf("a non-today date must show only its own slate (1,2), got %+v", notToday)
 	}
 }
 

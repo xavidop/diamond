@@ -12,8 +12,10 @@ import (
 	"github.com/xavidop/diamond/cli/internal/mlb"
 )
 
-// formatGameTime returns the game start time in ET, appending local time
-// when the user's timezone differs from Eastern.
+// formatGameTime returns the game start time in ET, appending local time when
+// the user's timezone differs from Eastern. When the local time lands on a
+// different calendar day than the Eastern game day it gets a "+1"/"-1" suffix
+// (e.g. a 6:40 PM ET game reads "6:40 PM ET · 12:40 AM CEST +1").
 func formatGameTime(gameDate string) string {
 	t, err := time.Parse(time.RFC3339, gameDate)
 	if err != nil {
@@ -26,7 +28,17 @@ func formatGameTime(gameDate string) string {
 	if etZone == localZone {
 		return etStr
 	}
-	return etStr + " · " + t.In(time.Local).Format("3:04 PM MST")
+	local := t.In(time.Local).Format("3:04 PM MST")
+	if etDay, localDay := t.In(et).Format("2006-01-02"), t.In(time.Local).Format("2006-01-02"); etDay != localDay {
+		ed, _ := time.Parse("2006-01-02", etDay)
+		ld, _ := time.Parse("2006-01-02", localDay)
+		if diff := int(ld.Sub(ed).Hours() / 24); diff > 0 {
+			local += fmt.Sprintf(" +%d", diff)
+		} else {
+			local += fmt.Sprintf(" %d", diff)
+		}
+	}
+	return etStr + " · " + local
 }
 
 // centerIn centers a (possibly ANSI-styled) string within visual width w.

@@ -28,10 +28,29 @@ function zoneAbbr(date: Date, timeZone?: string) {
   return parts.find((p) => p.type === "timeZoneName")?.value ?? "";
 }
 
+// dayOffset returns " +1" / " -1" when the viewer's local calendar day for the
+// instant differs from the game's Eastern (game-day) date, so a late game that
+// lands after local midnight reads e.g. "12:40 AM CEST +1".
+function dayOffset(date: Date): string {
+  const isoDate = (timeZone?: string) =>
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(date);
+  const diff = Math.round(
+    (Date.parse(isoDate()) - Date.parse(isoDate(ET_ZONE))) / 86_400_000,
+  );
+  if (diff === 0) return "";
+  return diff > 0 ? ` +${diff}` : ` ${diff}`;
+}
+
 // fmtGameTime mirrors the CLI's formatGameTime: always show the game's Eastern
 // (league) time, and append the viewer's local time + zone abbreviation only
 // when it differs — e.g. "9:07 PM ET · 6:07 PM PDT", or just "9:07 PM ET" for a
-// viewer already in Eastern.
+// viewer already in Eastern. When the local time falls on a different calendar
+// day than the Eastern game day, it gets a "+1"/"-1" suffix.
 export function fmtGameTime(d: string | Date) {
   const date = typeof d === "string" ? new Date(d) : d;
   if (Number.isNaN(date.getTime())) return "";
@@ -49,7 +68,7 @@ export function fmtGameTime(d: string | Date) {
     hour12: true,
     timeZoneName: "short",
   }).format(date);
-  return `${et} · ${local}`;
+  return `${et} · ${local}${dayOffset(date)}`;
 }
 
 export function todayIso() {
@@ -66,57 +85,33 @@ export function shiftDate(iso: string, days: number) {
 
 export type DatedGame = {
   gamePk: number;
-  status?: { abstractGameState?: string; detailedState?: string };
+  status?: { abstractGameState?: string };
   gameDate?: string;
 };
 
-// localDateOf returns the YYYY-MM-DD calendar date of an instant in the
-// viewer's local timezone — the same local-day math as todayIso. Empty string
-// for an unparseable date.
-export function localDateOf(d: string | Date): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  if (Number.isNaN(date.getTime())) return "";
-  const shifted = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return shifted.toISOString().slice(0, 10);
-}
-
-// A postponed/cancelled entry is a "ghost": the MLB schedule keeps it under its
-// original date even after the game is replayed, so the same gamePk comes back
-// in two slates with different gameDates. The ghost must never win dedup.
-function isGhost(g: DatedGame): boolean {
-  return /postponed|cancel/i.test(g.status?.detailedState ?? "");
-}
-
-// bucketDay decides which local calendar day a game belongs to. A live game
-// belongs to *today* — one that started before local midnight and is still
-// going shows on the current day; everything else belongs to the local day it
-// started, so a finished game stays on the day it was actually played.
-export function bucketDay(g: DatedGame, todayIso: string): string {
-  if (g.status?.abstractGameState === "Live") return todayIso;
-  return localDateOf(g.gameDate ?? "");
-}
-
-// gamesForDay returns the games that belong to `viewDate` (a local YYYY-MM-DD)
-// given today's local date. MLB files each game under its US date, so a night
-// game shows up in two adjacent US slates for viewers far from Eastern (an 8pm
-// ET game is 2am the next day in Spain); callers fetch the neighbouring slates
-// so every candidate is available. Games are de-duped by gamePk (preferring the
-// real entry over a postponed ghost), bucketed by bucketDay, and ordered by
-// start time, so each game lands on exactly one calendar day.
+// gamesForDay returns the games for one day exactly as the MLB schedule files
+// them: `slate` is the API's game list for the selected date. When that date is
+// today it also folds in any game from the neighbouring days that is currently
+// live, so an active game filed under another timezone's date still shows.
+// De-duped by gamePk and ordered by start time. No reshuffling across days: a
+// finished game stays on the single day the API assigned it.
 export function gamesForDay<T extends DatedGame>(
-  games: T[],
-  viewDate: string,
-  todayIso: string,
+  slate: T[],
+  neighbors: T[],
+  isToday: boolean,
 ): T[] {
   const byPk = new Map<number, T>();
-  for (const g of games) {
-    const prev = byPk.get(g.gamePk);
-    if (!prev || (isGhost(prev) && !isGhost(g))) byPk.set(g.gamePk, g);
+  for (const g of slate) {
+    if (!byPk.has(g.gamePk)) byPk.set(g.gamePk, g);
   }
-  const out: T[] = [];
-  for (const g of byPk.values()) {
-    if (bucketDay(g, todayIso) === viewDate) out.push(g);
+  if (isToday) {
+    for (const g of neighbors) {
+      if (g.status?.abstractGameState === "Live" && !byPk.has(g.gamePk)) {
+        byPk.set(g.gamePk, g);
+      }
+    }
   }
+  const out = [...byPk.values()];
   out.sort((a, b) => (a.gameDate ?? "").localeCompare(b.gameDate ?? ""));
   return out;
 }
