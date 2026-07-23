@@ -1,24 +1,33 @@
 // web/src/components/miniviewer/MiniScoreboard.tsx
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
-import { api, teamLogoUrl } from "../../api/mlb";
+import { api } from "../../api/mlb";
 import { useSport } from "../../contexts/SportContext";
 import { useMiniViewer } from "../../contexts/MiniViewerContext";
 import { Spinner, Empty } from "../ui/Primitives";
 import { todayIso } from "../../lib/utils";
 import { useLocalDaySchedule } from "../../hooks/useLocalDaySchedule";
-import {
-  sortGames,
-  pickDefaultGame,
-  isLive,
-  basesFromOffense,
-  type MiniGame,
-} from "../../lib/miniviewer";
+import { pitcherLine, batterLine } from "../../lib/miniBoxscore";
+import { sortGames, pickDefaultGame, isLive, type MiniGame } from "../../lib/miniviewer";
+import type { MiniMode } from "../../lib/miniStorage";
+import FocusView from "./FocusView";
+import SlateView from "./SlateView";
+
+/** Ticks once a second so the scheduled-game countdown advances. */
+function useNow(active: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  return now;
+}
 
 export default function MiniScoreboard() {
   const { sportId } = useSport();
-  const { selectedGamePk, selectGame, closeMini } = useMiniViewer();
+  const { selectedGamePk, selectGame, closeMini, mode, setMode } = useMiniViewer();
   const date = todayIso();
 
   // Same local-day bucketing as the Today page so the two always agree.
@@ -26,30 +35,58 @@ export default function MiniScoreboard() {
   const games = sortGames(dayGames);
   const selected = games.find((g) => g.gamePk === selectedGamePk) ?? null;
 
+  // Select a default when nothing is chosen, and recover when a persisted
+  // selection points at a game that is not on today's slate (e.g. reopening
+  // the next day).
   useEffect(() => {
-    if (selectedGamePk == null && games.length > 0) {
-      const def = pickDefaultGame(games);
-      if (def != null) selectGame(def);
-    }
-  }, [selectedGamePk, games, selectGame]);
+    if (games.length === 0) return;
+    if (selectedGamePk != null && selected) return;
+    const def = pickDefaultGame(games);
+    if (def != null) selectGame(def);
+  }, [selectedGamePk, selected, games, selectGame]);
 
-  const line = useQuery({
+  const live = isLive(selected);
+  const final = selected?.status?.abstractGameState === "Final";
+  const scheduled = !!selected && !live && !final;
+
+  const lineQ = useQuery({
     queryKey: ["mini-linescore", selectedGamePk],
     queryFn: () => api.gameLinescore(selectedGamePk!),
-    enabled: selectedGamePk != null && isLive(selected),
+    enabled: selectedGamePk != null && live,
     refetchInterval: 15_000,
   });
 
+  const boxQ = useQuery({
+    queryKey: ["mini-boxscore", selectedGamePk],
+    queryFn: () => api.gameBoxscore(selectedGamePk!),
+    enabled: selectedGamePk != null && (live || final),
+    // A final boxscore never changes; only poll while the game is in progress.
+    refetchInterval: live ? 15_000 : false,
+    staleTime: live ? 0 : Infinity,
+  });
+
+  const ls = lineQ.data ?? selected?.linescore;
+  const now = useNow(mode === "focus" && scheduled);
+
+  const stats = {
+    pitcher: pitcherLine(boxQ.data, ls?.defense?.pitcher?.id),
+    batter: batterLine(boxQ.data, ls?.offense?.batter?.id),
+  };
+
   return (
-    <div className="diamond-mini diamond-chrome flex h-full flex-col bg-pitch-950 text-white font-sans text-sm">
-      <header className="flex items-center justify-between px-3 py-2 border-b border-white/10 shrink-0">
-        <span className="font-display font-black uppercase tracking-widest text-[11px] text-volt-500">
+    <div className="diamond-mini diamond-chrome flex h-full flex-col bg-pitch-950 font-sans text-sm text-white">
+      <header className="flex shrink-0 items-center gap-2 border-b border-white/10 px-3 py-2">
+        {games.some(isLive) && (
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-volt-500 shadow-glow-volt" aria-hidden />
+        )}
+        <span className="font-display text-[11px] font-black uppercase tracking-[0.16em] text-volt-500">
           Mini Viewer
         </span>
+        <ModeToggle mode={mode} onChange={setMode} />
         <button
           onClick={closeMini}
           aria-label="Close mini viewer"
-          className="text-white/40 hover:text-white"
+          className="ml-auto text-white/40 hover:text-white"
         >
           <X size={14} />
         </button>
@@ -64,156 +101,44 @@ export default function MiniScoreboard() {
           <Empty message="No games today" />
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto">
-          <Detail game={selected} line={line.data} />
-          <GamesList games={games} selectedGamePk={selectedGamePk} onSelect={selectGame} />
+        <div className="min-h-0 flex-1">
+          {mode === "focus" ? (
+            <FocusView
+              game={selected}
+              games={games}
+              selectedGamePk={selectedGamePk}
+              onSelect={selectGame}
+              stats={stats}
+              now={now}
+              liveLinescore={live ? lineQ.data : undefined}
+            />
+          ) : (
+            <SlateView games={games} selectedGamePk={selectedGamePk} onSelect={(pk) => { selectGame(pk); setMode("focus"); }} />
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function Logo({ id, size = 24 }: { id?: number; size?: number }) {
-  if (!id) return null;
-  return (
-    <img
-      src={teamLogoUrl(id)}
-      alt=""
-      style={{ height: size, width: size }}
-      className="object-contain"
-      onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
-    />
+function ModeToggle({ mode, onChange }: { mode: MiniMode; onChange: (m: MiniMode) => void }) {
+  const item = (value: MiniMode, label: string) => (
+    <button
+      key={value}
+      type="button"
+      onClick={() => onChange(value)}
+      aria-pressed={mode === value}
+      className={`rounded px-2 py-0.5 font-display text-[10px] font-extrabold uppercase tracking-[0.1em] ${
+        mode === value ? "bg-volt-500 text-pitch-950" : "text-white/45 hover:text-white/80"
+      }`}
+    >
+      {label}
+    </button>
   );
-}
-
-function Detail({ game, line }: { game: MiniGame | null; line?: any }) {
-  if (!game) return null;
-  const away = game.teams?.away;
-  const home = game.teams?.home;
-  const state = game.status?.abstractGameState ?? "";
-  const live = state === "Live";
-  const final = state === "Final";
-
-  let statusLine = "Scheduled";
-  if (final) statusLine = "Final";
-  else if (live) {
-    const ord = line?.currentInningOrdinal ?? game.linescore?.currentInningOrdinal ?? "";
-    const half = line?.inningState ?? game.linescore?.inningState ?? "";
-    statusLine = `${half} ${ord}`.trim();
-  }
-
-  const bases = basesFromOffense(line?.offense);
-  const outs = live ? line?.outs ?? 0 : 0;
-
   return (
-    <div className="border-b border-white/10 p-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 min-w-0">
-          <Logo id={away?.team?.id} />
-          <span className="font-display font-bold uppercase truncate">
-            {away?.team?.abbreviation ?? away?.team?.name}
-          </span>
-        </div>
-        <span className="font-mono font-black text-lg tabular-nums">{away?.score ?? "-"}</span>
-      </div>
-      <div className="mt-1 flex items-center justify-between">
-        <div className="flex items-center gap-2 min-w-0">
-          <Logo id={home?.team?.id} />
-          <span className="font-display font-bold uppercase truncate">
-            {home?.team?.abbreviation ?? home?.team?.name}
-          </span>
-        </div>
-        <span className="font-mono font-black text-lg tabular-nums">{home?.score ?? "-"}</span>
-      </div>
-
-      <div className="mt-2 flex items-center justify-between">
-        <span className="pill">{statusLine || "—"}</span>
-        {live && (
-          <div className="flex items-center gap-3">
-            <Diamond bases={bases} />
-            <Outs outs={outs} />
-          </div>
-        )}
-      </div>
+    <div className="flex rounded-md bg-white/[0.06] p-0.5">
+      {item("focus", "Focus")}
+      {item("slate", "Slate")}
     </div>
-  );
-}
-
-function Diamond({ bases }: { bases: { first: boolean; second: boolean; third: boolean } }) {
-  const pip = (on: boolean) =>
-    `h-2.5 w-2.5 rotate-45 border border-white/40 ${on ? "bg-volt-500" : "bg-transparent"}`;
-  return (
-    <div className="relative h-7 w-7" title="Runners on base">
-      <div className={`absolute left-1/2 top-0 -translate-x-1/2 ${pip(bases.second)}`} />
-      <div className={`absolute left-0 top-1/2 -translate-y-1/2 ${pip(bases.third)}`} />
-      <div className={`absolute right-0 top-1/2 -translate-y-1/2 ${pip(bases.first)}`} />
-    </div>
-  );
-}
-
-function Outs({ outs }: { outs: number }) {
-  return (
-    <div className="flex items-center gap-1" title={`${outs} out`}>
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className={`h-2 w-2 rounded-full ${i < outs ? "bg-danger-500" : "bg-white/15"}`}
-        />
-      ))}
-    </div>
-  );
-}
-
-function GamesList({
-  games,
-  selectedGamePk,
-  onSelect,
-}: {
-  games: MiniGame[];
-  selectedGamePk: number | null;
-  onSelect: (gamePk: number) => void;
-}) {
-  return (
-    <ul className="divide-y divide-white/5">
-      {games.map((g) => {
-        const a = g.teams?.away;
-        const h = g.teams?.home;
-        const stateRaw = g.status?.abstractGameState ?? "";
-        const sel = g.gamePk === selectedGamePk;
-        return (
-          <li key={g.gamePk}>
-            <button
-              onClick={() => onSelect(g.gamePk)}
-              className={`flex w-full items-center justify-between px-3 py-2 text-left hover:bg-white/5 ${
-                sel ? "bg-white/10" : ""
-              }`}
-            >
-              <span className="min-w-0 truncate">
-                <span className="font-display font-bold uppercase">
-                  {a?.team?.abbreviation ?? "?"}
-                </span>{" "}
-                <span className="font-mono">{a?.score ?? ""}</span>
-                <span className="text-white/40"> @ </span>
-                <span className="font-display font-bold uppercase">
-                  {h?.team?.abbreviation ?? "?"}
-                </span>{" "}
-                <span className="font-mono">{h?.score ?? ""}</span>
-              </span>
-              <span
-                className={`text-[10px] uppercase tracking-wider shrink-0 ${
-                  stateRaw === "Live" ? "text-volt-500" : "text-white/40"
-                }`}
-              >
-                {stateRaw === "Live"
-                  ? g.linescore?.currentInningOrdinal ?? "Live"
-                  : stateRaw === "Final"
-                  ? "Final"
-                  : ""}
-              </span>
-            </button>
-          </li>
-        );
-      })}
-    </ul>
   );
 }
