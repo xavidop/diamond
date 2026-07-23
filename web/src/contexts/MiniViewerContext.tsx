@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { copyStyles, getDocPip, syncPipTheme } from "../lib/pip";
+import { readMode, writeMode, readGamePk, writeGamePk, type MiniMode } from "../lib/miniStorage";
 import { useTheme } from "./ThemeContext";
 
 type MiniViewerValue = {
@@ -16,9 +17,11 @@ type MiniViewerValue = {
   selectedGamePk: number | null;
   pipWindow: Window | null;
   usePanel: boolean;
+  mode: MiniMode;
   openMini: (gamePk?: number) => void;
   closeMini: () => void;
   selectGame: (gamePk: number) => void;
+  setMode: (mode: MiniMode) => void;
 };
 
 const Ctx = createContext<MiniViewerValue | null>(null);
@@ -27,7 +30,8 @@ const PIP_SIZE = { width: 360, height: 480 };
 
 export function MiniViewerProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const [selectedGamePk, setSelectedGamePk] = useState<number | null>(null);
+  const [selectedGamePk, setSelectedGamePk] = useState<number | null>(() => readGamePk());
+  const [mode, setModeState] = useState<MiniMode>(() => readMode());
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
   const [usePanel, setUsePanel] = useState(false);
   const pipRef = useRef<Window | null>(null);
@@ -52,7 +56,10 @@ export function MiniViewerProvider({ children }: { children: ReactNode }) {
   // invokes openMini) to satisfy the browser's user-activation requirement.
   const openMini = useCallback(
     (gamePk?: number) => {
-      if (gamePk != null) setSelectedGamePk(gamePk);
+      if (gamePk != null) {
+        setSelectedGamePk(gamePk);
+        writeGamePk(gamePk);
+      }
       setOpen(true);
       const dp = getDocPip();
       if (!dp) {
@@ -75,11 +82,29 @@ export function MiniViewerProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const selectGame = useCallback((gamePk: number) => setSelectedGamePk(gamePk), []);
+  const selectGame = useCallback((gamePk: number) => {
+    setSelectedGamePk(gamePk);
+    writeGamePk(gamePk);
+  }, []);
+
+  const setMode = useCallback((next: MiniMode) => {
+    setModeState(next);
+    writeMode(next);
+  }, []);
 
   return (
     <Ctx.Provider
-      value={{ open, selectedGamePk, pipWindow, usePanel, openMini, closeMini, selectGame }}
+      value={{
+        open,
+        selectedGamePk,
+        pipWindow,
+        usePanel,
+        mode,
+        openMini,
+        closeMini,
+        selectGame,
+        setMode,
+      }}
     >
       {children}
     </Ctx.Provider>

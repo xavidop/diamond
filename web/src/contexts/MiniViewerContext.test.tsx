@@ -1,8 +1,9 @@
 // web/src/contexts/MiniViewerContext.test.tsx
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { MiniViewerProvider, useMiniViewer } from "./MiniViewerContext";
 import { ThemeProvider } from "./ThemeContext";
+import { writeMode, writeGamePk } from "../lib/miniStorage";
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <ThemeProvider>
@@ -32,5 +33,35 @@ describe("MiniViewerContext", () => {
     const { result } = renderHook(() => useMiniViewer(), { wrapper });
     act(() => result.current.selectGame(9));
     expect(result.current.selectedGamePk).toBe(9);
+  });
+});
+
+describe("MiniViewerContext persistence", () => {
+  beforeEach(() => window.localStorage.clear());
+
+  it("defaults to focus mode", () => {
+    const { result } = renderHook(() => useMiniViewer(), { wrapper });
+    expect(result.current.mode).toBe("focus");
+  });
+
+  it("restores a stored mode and persists changes", () => {
+    writeMode("slate");
+    const { result } = renderHook(() => useMiniViewer(), { wrapper });
+    expect(result.current.mode).toBe("slate");
+    act(() => result.current.setMode("focus"));
+    expect(result.current.mode).toBe("focus");
+    expect(window.localStorage.getItem("diamond.mini.mode")).toBe("focus");
+  });
+
+  it("restores a stored game selection", () => {
+    writeGamePk(4242);
+    const { result } = renderHook(() => useMiniViewer(), { wrapper });
+    expect(result.current.selectedGamePk).toBe(4242);
+  });
+
+  it("persists a new selection", () => {
+    const { result } = renderHook(() => useMiniViewer(), { wrapper });
+    act(() => result.current.selectGame(77));
+    expect(window.localStorage.getItem("diamond.mini.gamePk")).toBe("77");
   });
 });
