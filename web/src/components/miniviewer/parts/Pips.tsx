@@ -27,7 +27,7 @@ export default function Pips({
             data-pip={on ? "on" : "off"}
             {...(on && kind === "out" ? { "data-cb-bad": "" } : {})}
             className={`${dot} rounded-full ${
-              on ? (kind === "out" ? "bg-danger-500" : "bg-volt-500") : "bg-white/15"
+              on ? (kind === "out" ? "bg-danger-500" : "bg-volt-500") : "bg-white/10"
             }`}
           />
         );

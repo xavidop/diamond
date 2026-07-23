@@ -17,6 +17,18 @@ describe("Diamond", () => {
     render(<Diamond bases={{ first: true, second: true, third: true }} />);
     expect(screen.getByLabelText("Bases loaded")).toBeTruthy();
   });
+  it("labels a runner on first only", () => {
+    render(<Diamond bases={{ first: true, second: false, third: false }} />);
+    expect(screen.getByLabelText("Runner on 1st")).toBeTruthy();
+  });
+  it("labels a runner on second only", () => {
+    render(<Diamond bases={{ first: false, second: true, third: false }} />);
+    expect(screen.getByLabelText("Runner on 2nd")).toBeTruthy();
+  });
+  it("labels a runner on third only", () => {
+    render(<Diamond bases={{ first: false, second: false, third: true }} />);
+    expect(screen.getByLabelText("Runner on 3rd")).toBeTruthy();
+  });
 });
 
 describe("Pips", () => {
