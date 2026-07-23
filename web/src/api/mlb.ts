@@ -62,6 +62,22 @@ export const api = {
       ...params,
     }),
 
+  // The day-slate variant: same endpoint, but hydrated with probable-pitcher
+  // season stats for the mini viewer, Today and Scoreboard pages. Kept separate
+  // from `schedule` so the range callers (TeamGameLog, VenuePage,
+  // MatchupInsights) are not made to pay for per-game pitcher stats.
+  //
+  // Every caller of this MUST use the ["schedule", sportId, date] query key, and
+  // every caller of that key MUST use this function — the key does not encode
+  // the hydrate, so mixing the two would make the cached shape non-deterministic.
+  daySchedule: (params: QueryParams = {}) =>
+    mlbFetch<any>("/schedule", {
+      sportId: 1,
+      hydrate:
+        "team,linescore,probablePitcher(stats(group=pitching,type=season)),decisions",
+      ...params,
+    }),
+
   standings: (params: QueryParams = {}) =>
     mlbFetch<any>("/standings", {
       season: params.season ?? new Date().getFullYear(),

@@ -14,17 +14,17 @@ export function useLocalDaySchedule<T extends DatedGame = DatedGame>(
 ) {
   const prevQ = useQuery({
     queryKey: ["schedule", sportId, shiftDate(dateIso, -1)],
-    queryFn: () => api.schedule({ date: shiftDate(dateIso, -1), sportId }),
+    queryFn: () => api.daySchedule({ date: shiftDate(dateIso, -1), sportId }),
     refetchInterval: 30_000,
   });
   const curQ = useQuery({
     queryKey: ["schedule", sportId, dateIso],
-    queryFn: () => api.schedule({ date: dateIso, sportId }),
+    queryFn: () => api.daySchedule({ date: dateIso, sportId }),
     refetchInterval: 30_000,
   });
   const nextQ = useQuery({
     queryKey: ["schedule", sportId, shiftDate(dateIso, 1)],
-    queryFn: () => api.schedule({ date: shiftDate(dateIso, 1), sportId }),
+    queryFn: () => api.daySchedule({ date: shiftDate(dateIso, 1), sportId }),
     refetchInterval: 30_000,
   });
 

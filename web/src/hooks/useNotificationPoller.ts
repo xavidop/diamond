@@ -22,13 +22,13 @@ export function useNotificationPoller(): void {
 
   const todayQ = useQuery({
     queryKey: ["schedule", sportId, today],
-    queryFn: () => api.schedule({ date: today, sportId }),
+    queryFn: () => api.daySchedule({ date: today, sportId }),
     refetchInterval: enabled ? 30_000 : false,
     enabled,
   });
   const yesterdayQ = useQuery({
     queryKey: ["schedule", sportId, yesterday],
-    queryFn: () => api.schedule({ date: yesterday, sportId }),
+    queryFn: () => api.daySchedule({ date: yesterday, sportId }),
     refetchInterval: enabled ? 30_000 : false,
     enabled,
   });
