@@ -77,6 +77,65 @@ func TestMergeRecentSpilloverUpcoming(t *testing.T) {
 	}
 }
 
+func gameAt(pk int, state, detailed string, start time.Time) Game {
+	g := spilloverGame(pk, state)
+	g.Status.DetailedState = detailed
+	g.GameDate = start.Format(time.RFC3339)
+	return g
+}
+
+func ids(games []Game) map[int]bool {
+	out := map[int]bool{}
+	for _, g := range games {
+		out[g.GamePk] = true
+	}
+	return out
+}
+
+// GamesForDay buckets live games onto today and finished/upcoming games onto
+// the local day they started.
+func TestGamesForDay(t *testing.T) {
+	base := time.Date(2026, 6, 27, 12, 0, 0, 0, time.UTC)
+	day := base.In(time.Local).Format("2006-01-02")
+	next := base.Add(48 * time.Hour).In(time.Local).Format("2006-01-02")
+
+	games := []Game{
+		gameAt(10, "Final", "Final", base),                         // finished today → day
+		gameAt(11, "Live", "In Progress", base.Add(-48*time.Hour)), // live, started 2 days ago → today
+		gameAt(12, "Final", "Final", base.Add(48*time.Hour)),       // finished, started 2 days later → next
+	}
+
+	onDay := ids(GamesForDay(games, day, day))
+	if !onDay[10] || !onDay[11] {
+		t.Fatalf("expected games 10 (final today) and 11 (live→today) on %s, got %+v", day, onDay)
+	}
+	if onDay[12] {
+		t.Fatal("a game that started two days later must not appear on today")
+	}
+	onNext := GamesForDay(games, next, day)
+	if len(onNext) != 1 || onNext[0].GamePk != 12 {
+		t.Fatalf("expected only game 12 on %s, got %+v", next, ids(onNext))
+	}
+}
+
+// A postponed ghost must lose dedup to the real replayed entry, so the game
+// shows only on the day it was actually played.
+func TestGamesForDayGhost(t *testing.T) {
+	base := time.Date(2026, 6, 27, 12, 0, 0, 0, time.UTC)
+	day := base.In(time.Local).Format("2006-01-02")
+	next := base.Add(48 * time.Hour).In(time.Local).Format("2006-01-02")
+
+	ghost := gameAt(1, "Preview", "Postponed", base)            // buckets to day by start
+	real := gameAt(1, "Final", "Final", base.Add(48*time.Hour)) // real replay → next
+
+	if got := GamesForDay([]Game{ghost, real}, day, day); len(got) != 0 {
+		t.Fatalf("postponed ghost must not appear on its original day, got %+v", ids(got))
+	}
+	if got := GamesForDay([]Game{ghost, real}, next, day); len(got) != 1 || got[0].GamePk != 1 {
+		t.Fatalf("real replayed game should appear on its day, got %+v", ids(got))
+	}
+}
+
 // A Final game with an unparseable date falls back to the live-only rule.
 func TestMergeRecentSpilloverBadDate(t *testing.T) {
 	now := time.Date(2026, 6, 27, 8, 0, 0, 0, time.UTC)

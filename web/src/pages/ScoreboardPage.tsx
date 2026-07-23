@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
-import { api, teamLogoUrl } from "../api/mlb";
+import { teamLogoUrl } from "../api/mlb";
 import { ErrorBox, SectionTitle, Spinner, Empty } from "../components/ui/Primitives";
-import { cn, fmtGameTime, shiftDate, todayIso, mergeRecentSpillover } from "../lib/utils";
+import { cn, fmtGameTime, shiftDate, todayIso } from "../lib/utils";
+import { useLocalDaySchedule } from "../hooks/useLocalDaySchedule";
 import { Link } from "react-router-dom";
 import { useSport } from "../contexts/SportContext";
 import NotifyButton from "../components/ui/NotifyButton";
@@ -36,30 +36,17 @@ type MlbGame = {
 export default function ScoreboardPage() {
   const [date, setDate] = useState(todayIso());
   const { sportId, sport } = useSport();
-  const isToday = date === todayIso();
-  const yesterday = shiftDate(date, -1);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["schedule", sportId, date],
-    queryFn: () => api.schedule({ date, sportId }),
-    refetchInterval: 30_000,
-  });
-  // On "today", tonight's US games are filed under yesterday's date for viewers
-  // east of the US; pull in the live/just-finished/imminent ones (see
-  // mergeRecentSpillover). Other dates show exactly that day's slate.
-  const yesterdayQuery = useQuery({
-    queryKey: ["schedule", sportId, yesterday],
-    queryFn: () => api.schedule({ date: yesterday, sportId }),
-    refetchInterval: 30_000,
-    enabled: isToday,
-  });
+  // Show the games that fall on the selected local calendar day. A night game
+  // filed under an adjacent US date is bucketed onto the day it's played
+  // locally, so it appears on exactly one day (never two adjacent ones).
+  const { games, isLoading, error } = useLocalDaySchedule<MlbGame>(date, sportId);
 
-  const games = useMemo(() => {
-    const todayGames = ((data?.dates ?? [])[0]?.games ?? []) as MlbGame[];
-    if (!isToday) return todayGames;
-    const yGames = ((yesterdayQuery.data?.dates ?? [])[0]?.games ?? []) as MlbGame[];
-    return mergeRecentSpillover(todayGames, yGames);
-  }, [data, yesterdayQuery.data, isToday]);
+  // Group by state — live first, then upcoming, then final. `games` is already
+  // ordered by start time, so each group stays in start-time order.
+  const live = games.filter((g) => g.status?.abstractGameState === "Live");
+  const upcoming = games.filter((g) => g.status?.abstractGameState === "Preview");
+  const final = games.filter((g) => g.status?.abstractGameState === "Final");
 
   return (
     <div className="space-y-6">
@@ -111,6 +98,24 @@ export default function ScoreboardPage() {
         <Empty message="No games scheduled." />
       )}
 
+      {!isLoading && !error && games.length > 0 && (
+        <div className="space-y-6">
+          <ScoreGroup title="Live" games={live} />
+          <ScoreGroup title="Upcoming" games={upcoming} />
+          <ScoreGroup title="Final" games={final} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScoreGroup({ title, games }: { title: string; games: MlbGame[] }) {
+  if (games.length === 0) return null;
+  return (
+    <div>
+      <div className="mb-3 font-display font-bold text-[9px] tracking-[0.22em] uppercase text-white/25">
+        {title} <span className="text-white/15">· {games.length}</span>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {games.map((g) => (
           <GameCard key={g.gamePk} game={g} />
@@ -121,9 +126,8 @@ export default function ScoreboardPage() {
 }
 
 function GameCard({ game }: { game: MlbGame }) {
-  const status = game.status?.abstractGameState ?? "";
   const detail = game.status?.detailedState ?? "";
-  const ls = game.linescore;
+  const status = game.status?.abstractGameState ?? "";
   const away = game.teams?.away;
   const home = game.teams?.home;
 
@@ -159,12 +163,8 @@ function GameCard({ game }: { game: MlbGame }) {
       <TeamRow team={home} score={home?.score} isWinner={isFinal && home?.isWinner} />
 
       <div className="mt-3 flex items-center justify-between text-xs text-pitch-300/80">
-        <div>
-          {status === "Preview" && game.gameDate
-            ? fmtGameTime(game.gameDate)
-            : ls?.inningState
-            ? `${ls.inningState} ${ls.currentInningOrdinal ?? ""}`
-            : detail}
+        <div className="tabular-nums">
+          {game.gameDate ? fmtGameTime(game.gameDate) : detail}
         </div>
         <div className="flex items-center gap-2">
           {game.teams?.away?.probablePitcher && (

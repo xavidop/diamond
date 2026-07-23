@@ -6,7 +6,8 @@ import { api, teamLogoUrl } from "../../api/mlb";
 import { useSport } from "../../contexts/SportContext";
 import { useMiniViewer } from "../../contexts/MiniViewerContext";
 import { Spinner, Empty } from "../ui/Primitives";
-import { todayIso, shiftDate, mergeRecentSpillover } from "../../lib/utils";
+import { todayIso } from "../../lib/utils";
+import { useLocalDaySchedule } from "../../hooks/useLocalDaySchedule";
 import {
   sortGames,
   pickDefaultGame,
@@ -19,25 +20,10 @@ export default function MiniScoreboard() {
   const { sportId } = useSport();
   const { selectedGamePk, selectGame, closeMini } = useMiniViewer();
   const date = todayIso();
-  const yesterday = shiftDate(date, -1);
 
-  const schedule = useQuery({
-    queryKey: ["schedule", sportId, date],
-    queryFn: () => api.schedule({ date, sportId }),
-    refetchInterval: 30_000,
-  });
-  // Tonight's US games are filed under yesterday's date for viewers east of the
-  // US; pull in the live/just-finished/imminent ones so the mini viewer matches
-  // the Today page (see mergeRecentSpillover).
-  const yesterdaySchedule = useQuery({
-    queryKey: ["schedule", sportId, yesterday],
-    queryFn: () => api.schedule({ date: yesterday, sportId }),
-    refetchInterval: 30_000,
-  });
-
-  const todayGames = (schedule.data?.dates?.[0]?.games ?? []) as MiniGame[];
-  const yesterdayGames = (yesterdaySchedule.data?.dates?.[0]?.games ?? []) as MiniGame[];
-  const games = sortGames(mergeRecentSpillover(todayGames, yesterdayGames));
+  // Same local-day bucketing as the Today page so the two always agree.
+  const { games: dayGames, isLoading } = useLocalDaySchedule<MiniGame>(date, sportId);
+  const games = sortGames(dayGames);
   const selected = games.find((g) => g.gamePk === selectedGamePk) ?? null;
 
   useEffect(() => {
@@ -69,7 +55,7 @@ export default function MiniScoreboard() {
         </button>
       </header>
 
-      {schedule.isLoading ? (
+      {isLoading ? (
         <div className="flex flex-1 items-center justify-center">
           <Spinner />
         </div>

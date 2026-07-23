@@ -64,51 +64,59 @@ export function shiftDate(iso: string, days: number) {
   return d.toISOString().slice(0, 10);
 }
 
-export type SpilloverGame = {
+export type DatedGame = {
   gamePk: number;
-  status?: { abstractGameState?: string };
+  status?: { abstractGameState?: string; detailedState?: string };
   gameDate?: string;
 };
 
-// A single MLB slate's games all start within ~12h; this bounds how far back a
-// finished adjacent-day game can have started and still count as "today".
-const SPILLOVER_PAST_MS = 12 * 60 * 60 * 1000;
-// How far into the future an adjacent-slate game may start and still count as
-// "today": for a viewer east of the US, this evening's US games are filed under
-// the previous local date and haven't started yet, so they'd otherwise be
-// dropped. One slate's remaining games all begin within a few hours.
-const SPILLOVER_UPCOMING_MS = 6 * 60 * 60 * 1000;
+// localDateOf returns the YYYY-MM-DD calendar date of an instant in the
+// viewer's local timezone — the same local-day math as todayIso. Empty string
+// for an unparseable date.
+export function localDateOf(d: string | Date): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(date.getTime())) return "";
+  const shifted = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return shifted.toISOString().slice(0, 10);
+}
 
-// mergeRecentSpillover returns primary plus any adjacent-day game that belongs
-// to the same rolling window and isn't already present: still Live, started
-// within the last 12h, or starting within the next 6h. The MLB schedule files
-// a game under the US date it's played, so for a viewer east of the US (e.g.
-// Spain) tonight's US games land under the previous local date — live, just
-// finished, or about to start. Keying off the game's absolute start time
-// (gameDate, UTC) rather than the local calendar date keeps them on "today"
-// regardless of timezone, instead of the page jumping to the next slate at
-// local midnight and hiding games that are on now or imminent.
-export function mergeRecentSpillover<T extends SpilloverGame>(
-  primary: T[],
-  adjacent: T[],
-  now: Date = new Date(),
+// A postponed/cancelled entry is a "ghost": the MLB schedule keeps it under its
+// original date even after the game is replayed, so the same gamePk comes back
+// in two slates with different gameDates. The ghost must never win dedup.
+function isGhost(g: DatedGame): boolean {
+  return /postponed|cancel/i.test(g.status?.detailedState ?? "");
+}
+
+// bucketDay decides which local calendar day a game belongs to. A live game
+// belongs to *today* — one that started before local midnight and is still
+// going shows on the current day; everything else belongs to the local day it
+// started, so a finished game stays on the day it was actually played.
+export function bucketDay(g: DatedGame, todayIso: string): string {
+  if (g.status?.abstractGameState === "Live") return todayIso;
+  return localDateOf(g.gameDate ?? "");
+}
+
+// gamesForDay returns the games that belong to `viewDate` (a local YYYY-MM-DD)
+// given today's local date. MLB files each game under its US date, so a night
+// game shows up in two adjacent US slates for viewers far from Eastern (an 8pm
+// ET game is 2am the next day in Spain); callers fetch the neighbouring slates
+// so every candidate is available. Games are de-duped by gamePk (preferring the
+// real entry over a postponed ghost), bucketed by bucketDay, and ordered by
+// start time, so each game lands on exactly one calendar day.
+export function gamesForDay<T extends DatedGame>(
+  games: T[],
+  viewDate: string,
+  todayIso: string,
 ): T[] {
-  const seen = new Set(primary.map((g) => g.gamePk));
-  const out = [...primary];
-  const nowMs = now.getTime();
-  const past = nowMs - SPILLOVER_PAST_MS;
-  const ahead = nowMs + SPILLOVER_UPCOMING_MS;
-  for (const g of adjacent) {
-    if (seen.has(g.gamePk)) continue;
-    let keep = g.status?.abstractGameState === "Live";
-    if (!keep && g.gameDate) {
-      const start = new Date(g.gameDate).getTime();
-      keep = !Number.isNaN(start) && start >= past && start <= ahead;
-    }
-    if (keep) {
-      out.push(g);
-      seen.add(g.gamePk);
-    }
+  const byPk = new Map<number, T>();
+  for (const g of games) {
+    const prev = byPk.get(g.gamePk);
+    if (!prev || (isGhost(prev) && !isGhost(g))) byPk.set(g.gamePk, g);
   }
+  const out: T[] = [];
+  for (const g of byPk.values()) {
+    if (bucketDay(g, todayIso) === viewDate) out.push(g);
+  }
+  out.sort((a, b) => (a.gameDate ?? "").localeCompare(b.gameDate ?? ""));
   return out;
 }

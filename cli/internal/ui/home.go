@@ -45,13 +45,12 @@ func homeTick() tea.Cmd {
 // slowly), for the periodic background tick.
 func (m HomeModel) fetchGames() tea.Cmd {
 	c := m.client
-	now := time.Now()
-	today := now.Format("2006-01-02")
-	yesterday := now.AddDate(0, 0, -1).Format("2006-01-02")
+	today := time.Now().Format("2006-01-02")
 	return func() tea.Msg {
-		todayG, _ := c.Schedule(today, 1)
-		yestG, _ := c.Schedule(yesterday, 1)
-		return homeGamesMsg{games: mlb.MergeRecentSpillover(todayG, yestG, now)}
+		// Bucket by the viewer's local day so tonight's US games (filed under
+		// an adjacent US date) appear today and never on two days at once.
+		games, _ := c.LocalDaySchedule(today, 1)
+		return homeGamesMsg{games: games}
 	}
 }
 
@@ -68,10 +67,8 @@ func (m HomeModel) liveGames() int {
 
 func (m HomeModel) fetch() tea.Cmd {
 	c := m.client
-	now := time.Now()
-	today := now.Format("2006-01-02")
-	yesterday := now.AddDate(0, 0, -1).Format("2006-01-02")
-	season := fmt.Sprintf("%d", now.Year())
+	today := time.Now().Format("2006-01-02")
+	season := fmt.Sprintf("%d", time.Now().Year())
 	return func() tea.Msg {
 		var games []mlb.Game
 		var hr, era []mlb.Leader
@@ -79,12 +76,10 @@ func (m HomeModel) fetch() tea.Cmd {
 		wg.Add(3)
 		go func() {
 			defer wg.Done()
-			// Include yesterday's live and just-finished games so matches that
-			// started before midnight (filed under yesterday's date) still
-			// appear today — for any viewer timezone.
-			todayG, _ := c.Schedule(today, 1)
-			yestG, _ := c.Schedule(yesterday, 1)
-			games = mlb.MergeRecentSpillover(todayG, yestG, now)
+			// Bucket by the viewer's local day: a night game filed under an
+			// adjacent US date still belongs to the day it's played locally, so
+			// it shows today for any timezone and only on that one day.
+			games, _ = c.LocalDaySchedule(today, 1)
 		}()
 		go func() { defer wg.Done(); hr, _ = c.Leaders("hitting", "homeRuns", 1, season) }()
 		go func() { defer wg.Done(); era, _ = c.Leaders("pitching", "earnedRunAverage", 1, season) }()
@@ -196,10 +191,11 @@ func renderHomeGameBlock(g mlb.Game) string {
 	case "Live":
 		score := StyleHeader.Render(fmt.Sprintf(" %2d-%-2d ", g.Teams.Away.Score, g.Teams.Home.Score))
 		return "  " + away + score + home + "  " +
-			pulseDot() + StyleLiveBadge.Render(g.Linescore.CurrentInningOrdinal)
+			pulseDot() + StyleLiveBadge.Render(g.Linescore.CurrentInningOrdinal) +
+			"  " + StyleDim.Render(shortClock(g.GameDate))
 	case "Final":
 		score := StyleHeader.Render(fmt.Sprintf(" %2d-%-2d ", g.Teams.Away.Score, g.Teams.Home.Score))
-		return "  " + away + score + home + "  " + StyleDim.Render("Final")
+		return "  " + away + score + home + "  " + StyleDim.Render("Final "+shortClock(g.GameDate))
 	default:
 		return "  " + away + StyleDim.Render("  @  ") + home + "  " + StyleDim.Render(shortClock(g.GameDate))
 	}

@@ -75,6 +75,89 @@ func MergeRecentSpillover(primary, adjacent []Game, now time.Time) []Game {
 	return out
 }
 
+// localDate returns the YYYY-MM-DD calendar date of an RFC3339 instant in the
+// machine's local timezone, or "" if it can't be parsed.
+func localDate(gameDate string) string {
+	t, err := time.Parse(time.RFC3339, gameDate)
+	if err != nil {
+		return ""
+	}
+	return t.In(time.Local).Format("2006-01-02")
+}
+
+// isGhost reports whether a game entry is a postponed/cancelled placeholder. The
+// MLB schedule keeps such an entry under its original date even after the game
+// is replayed, so the same GamePk comes back in two slates with different
+// GameDates; the ghost must never win dedup.
+func isGhost(g Game) bool {
+	s := strings.ToLower(g.Status.DetailedState)
+	return strings.Contains(s, "postponed") || strings.Contains(s, "cancel")
+}
+
+// bucketDay decides which local calendar day a game belongs to. A live game
+// belongs to today — one that started before local midnight and is still going
+// shows on the current day; everything else belongs to the local day it
+// started, so a finished game stays on the day it was actually played.
+func bucketDay(g Game, today string) string {
+	if g.Status.AbstractGameState == "Live" {
+		return today
+	}
+	return localDate(g.GameDate)
+}
+
+// GamesForDay returns the games that belong to viewDate (a local YYYY-MM-DD)
+// given today's local date. MLB files each game under its US date, so a night
+// game shows up in two adjacent US slates for viewers far from Eastern (an 8pm
+// ET game is 2am the next day in Spain). Games are de-duped by GamePk
+// (preferring the real entry over a postponed ghost) and bucketed by bucketDay,
+// so each game lands on exactly one calendar day.
+func GamesForDay(games []Game, viewDate, today string) []Game {
+	best := make(map[int]Game, len(games))
+	order := make([]int, 0, len(games))
+	for _, g := range games {
+		prev, ok := best[g.GamePk]
+		if !ok {
+			best[g.GamePk] = g
+			order = append(order, g.GamePk)
+			continue
+		}
+		if isGhost(prev) && !isGhost(g) {
+			best[g.GamePk] = g
+		}
+	}
+	out := make([]Game, 0, len(order))
+	for _, pk := range order {
+		if g := best[pk]; bucketDay(g, today) == viewDate {
+			out = append(out, g)
+		}
+	}
+	return out
+}
+
+// LocalDaySchedule returns the games that belong to the given local calendar
+// date (YYYY-MM-DD), fetching the day before, the day itself and the day after
+// so a night game filed under an adjacent US date is bucketed onto the correct
+// local day. The center day's fetch error is returned; the neighbors are
+// best-effort.
+func (c *Client) LocalDaySchedule(date string, sportID int) ([]Game, error) {
+	d, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return nil, err
+	}
+	center, err := c.Schedule(date, sportID)
+	if err != nil {
+		return nil, err
+	}
+	all := append([]Game{}, center...)
+	if prev, e := c.Schedule(d.AddDate(0, 0, -1).Format("2006-01-02"), sportID); e == nil {
+		all = append(all, prev...)
+	}
+	if next, e := c.Schedule(d.AddDate(0, 0, 1).Format("2006-01-02"), sportID); e == nil {
+		all = append(all, next...)
+	}
+	return GamesForDay(all, date, time.Now().Format("2006-01-02")), nil
+}
+
 // leagueIDs discovers the league IDs for a sport (used to build standings
 // queries for non-MLB levels, which have their own leagues).
 func (c *Client) leagueIDs(sportID int) (string, error) {

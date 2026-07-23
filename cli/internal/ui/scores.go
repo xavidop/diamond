@@ -188,9 +188,7 @@ func (m ScoresModel) visibleCount() int {
 
 func (m ScoresModel) fetchScores() tea.Cmd {
 	sport := m.sport
-	day := m.date
-	date := day.Format("2006-01-02")
-	isToday := date == time.Now().Format("2006-01-02")
+	date := m.date.Format("2006-01-02")
 	c := m.client
 	ch := m.cache
 	return func() tea.Msg {
@@ -198,21 +196,20 @@ func (m ScoresModel) fetchScores() tea.Cmd {
 		if v, ok := ch.Get(key); ok {
 			return scoresLoadedMsg{games: v.([]mlb.Game)}
 		}
-		games, err := c.Schedule(date, sport.ID)
+		// Games that fall on the selected local calendar day. A night game
+		// filed under an adjacent US date is bucketed onto the day it's played
+		// locally, so it appears on exactly one day (never two adjacent ones).
+		games, err := c.LocalDaySchedule(date, sport.ID)
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
-		// On today, also surface yesterday's live and just-finished games
-		// (started before midnight, so the schedule files them under
-		// yesterday's date) — correct for any viewer timezone.
-		if isToday {
-			if yest, yerr := c.Schedule(day.AddDate(0, 0, -1).Format("2006-01-02"), sport.ID); yerr == nil {
-				games = mlb.MergeRecentSpillover(games, yest, time.Now())
+		// Live first, then upcoming, then final — each ordered by start time.
+		sort.SliceStable(games, func(i, j int) bool {
+			if ri, rj := statusRank(games[i]), statusRank(games[j]); ri != rj {
+				return ri < rj
 			}
-		}
-		// Earliest-start first, so in-progress games that began before midnight
-		// (filed under yesterday) sort to the top instead of being tacked on last.
-		sort.SliceStable(games, func(i, j int) bool { return games[i].GameDate < games[j].GameDate })
+			return games[i].GameDate < games[j].GameDate
+		})
 		ch.Set(key, games, 30*time.Second)
 		return scoresLoadedMsg{games: games}
 	}
@@ -361,7 +358,7 @@ func (m ScoresModel) renderGameList() string {
 				hStr = StyleAccent.Bold(true).Render(hStr)
 			}
 			line1 = teamText(away.Team.ID, truncate(away.Team.Name, 18)) + "  " + aStr + "  ─  " + hStr + "  " + teamText(home.Team.ID, truncate(home.Team.Name, 18))
-			line2 = pulseDot() + " " + StyleLiveBadge.Render(inning+" "+half)
+			line2 = pulseDot() + " " + StyleLiveBadge.Render(inning+" "+half) + "  " + StyleDim.Render(formatGameTime(g.GameDate))
 
 		case "Final":
 			aStr := fmt.Sprintf("%d", away.Score)
@@ -372,7 +369,7 @@ func (m ScoresModel) renderGameList() string {
 				hStr = StyleAccent.Bold(true).Render(hStr)
 			}
 			line1 = teamText(away.Team.ID, truncate(away.Team.Name, 18)) + "  " + aStr + "  ─  " + hStr + "  " + teamText(home.Team.ID, truncate(home.Team.Name, 18))
-			line2 = StyleMuted.Render("Final")
+			line2 = StyleMuted.Render("Final") + "  " + StyleDim.Render(formatGameTime(g.GameDate))
 
 		default:
 			line1 = teamText(away.Team.ID, truncate(away.Team.Name, 18)) + "  vs  " + teamText(home.Team.ID, truncate(home.Team.Name, 18))

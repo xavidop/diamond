@@ -6,7 +6,7 @@ type SideT = {
 
 export type MiniGame = {
   gamePk: number;
-  status?: { abstractGameState?: string };
+  status?: { abstractGameState?: string; detailedState?: string };
   teams?: { away?: SideT; home?: SideT };
   linescore?: { currentInningOrdinal?: string; inningState?: string };
   gameDate?: string;

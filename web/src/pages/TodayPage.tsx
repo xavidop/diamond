@@ -9,7 +9,8 @@ import {
   SectionTitle,
   Spinner,
 } from "../components/ui/Primitives";
-import { cn, fmtGameTime, todayIso, shiftDate, mergeRecentSpillover } from "../lib/utils";
+import { cn, fmtGameTime, todayIso } from "../lib/utils";
+import { useLocalDaySchedule } from "../hooks/useLocalDaySchedule";
 import { useSport } from "../contexts/SportContext";
 import { useFavorites } from "../contexts/FavoritesContext";
 import { usePins } from "../contexts/PinsContext";
@@ -51,20 +52,9 @@ export default function TodayPage() {
   const { favs } = useFavorites();
   const { pins, remove } = usePins();
 
-  const yesterday = shiftDate(date, -1);
-  const schedule = useQuery({
-    queryKey: ["schedule", sportId, date],
-    queryFn: () => api.schedule({ date, sportId }),
-    refetchInterval: 30_000,
-  });
-  // Games that started before the viewer's local midnight are filed under
-  // yesterday's date by the MLB schedule; pull them in so live/just-finished
-  // matches don't vanish at midnight (see mergeRecentSpillover).
-  const yesterdaySchedule = useQuery({
-    queryKey: ["schedule", sportId, yesterday],
-    queryFn: () => api.schedule({ date: yesterday, sportId }),
-    refetchInterval: 30_000,
-  });
+  // Bucket by the viewer's local calendar day: a night game filed under an
+  // adjacent US date still belongs to the day it's actually played locally.
+  const { games, isLoading, error } = useLocalDaySchedule<MlbGame>(date, sportId);
   const hrLeaders = useQuery({
     queryKey: ["leaders", sportId, "homeRuns"],
     queryFn: () =>
@@ -76,9 +66,6 @@ export default function TodayPage() {
       api.statsLeaders({ leaderCategories: "earnedRunAverage", statGroup: "pitching", sportId, limit: 5 }),
   });
 
-  const todayGames = (schedule.data?.dates?.[0]?.games ?? []) as MlbGame[];
-  const yesterdayGames = (yesterdaySchedule.data?.dates?.[0]?.games ?? []) as MlbGame[];
-  const games = mergeRecentSpillover(todayGames, yesterdayGames);
   const live     = games.filter((g) => g.status?.abstractGameState === "Live");
   const final    = games.filter((g) => g.status?.abstractGameState === "Final");
   const upcoming = games.filter((g) => g.status?.abstractGameState === "Preview");
@@ -146,23 +133,31 @@ export default function TodayPage() {
         </Section>
       )}
 
-      {live.length > 0 && (
-        <Section title="Live games">
-          <GameList games={live} />
-        </Section>
+      {isLoading ? (
+        <div className="flex justify-center py-8"><Spinner /></div>
+      ) : error ? (
+        <ErrorBox error={error} />
+      ) : games.length === 0 ? (
+        <Empty message="No games today." />
+      ) : (
+        <>
+          {live.length > 0 && (
+            <Section title="Live games">
+              <GameList games={live} />
+            </Section>
+          )}
+          {upcoming.length > 0 && (
+            <Section title="Upcoming">
+              <GameList games={upcoming} />
+            </Section>
+          )}
+          {final.length > 0 && (
+            <Section title="Final">
+              <GameList games={final} />
+            </Section>
+          )}
+        </>
       )}
-
-      <Section title="Schedule today">
-        {schedule.isLoading ? (
-          <div className="flex justify-center py-8"><Spinner /></div>
-        ) : schedule.error ? (
-          <ErrorBox error={schedule.error} />
-        ) : games.length === 0 ? (
-          <Empty message="No games today." />
-        ) : (
-          <GameList games={[...upcoming, ...final].slice(0, 12)} />
-        )}
-      </Section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <LeadersCard title="HR Leaders" q={hrLeaders} statLabel="HR" />
@@ -326,15 +321,17 @@ function GameCard({ game }: { game: MlbGame }) {
         );
       })}
 
-      {isPreview && game.gameDate && (
+      {game.gameDate && (
         <div className="mt-2.5 pt-2.5 border-t border-white/5 flex items-center gap-1.5">
           <Clock size={12} className="text-volt-500 shrink-0" />
           <span className="font-display font-bold text-[11px] tracking-[0.1em] uppercase text-white/70 tabular-nums">
             {fmtGameTime(game.gameDate)}
           </span>
-          <span className="font-display font-bold text-[9px] tracking-[0.16em] uppercase text-white/25">
-            · First pitch
-          </span>
+          {isPreview && (
+            <span className="font-display font-bold text-[9px] tracking-[0.16em] uppercase text-white/25">
+              · First pitch
+            </span>
+          )}
         </div>
       )}
     </Link>
