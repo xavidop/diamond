@@ -40,7 +40,6 @@ export default function MiniPanel({
   };
 
   const startResize = (e: React.PointerEvent) => {
-    e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     resize.current = { x: e.clientX, y: e.clientY, w: geom.w, h: geom.h };
   };

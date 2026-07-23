@@ -265,7 +265,11 @@
      white-opacity ladder above. */
   html.light .diamond-mini [class~="bg-white/[0.03]"] { background-color: rgba(0,0,0,0.03) !important; }
   html.light .diamond-mini [class~="bg-white/[0.045]"] { background-color: rgba(0,0,0,0.04) !important; }
-  html.light .diamond-mini [class~="bg-white/5"] { background-color: rgba(0,0,0,0.045) !important; }
+  /* The only bare bg-white/5 in the mini viewer is MiniPanel's grip bar, which
+     sits on the panel's .diamond-chrome wrapper OUTSIDE .diamond-mini, so this
+     one is scoped to .diamond-chrome to reach it. No other .diamond-chrome
+     surface (sidebar, dropdowns) uses bg-white/5, so the wider scope is safe. */
+  html.light .diamond-chrome [class~="bg-white/5"] { background-color: rgba(0,0,0,0.045) !important; }
   /* The Tailwind hover variant is its own literal class token ("hover:bg-white/5"),
      not "bg-white/5" plus a separate hover state, so it needs its own selector +
      :hover — the bg-white/5 rule above does not match it. (GameRow row hover.) */
