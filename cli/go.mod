@@ -7,7 +7,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/glamour v1.0.0
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
-	github.com/firebase/genkit/go v1.10.0
+	github.com/firebase/genkit/go v1.11.0
 	github.com/gen2brain/beeep v0.11.2
 	github.com/lucasb-eyer/go-colorful v1.4.0
 	github.com/spf13/cobra v1.10.2
@@ -97,7 +97,7 @@ require (
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
-	google.golang.org/genai v1.51.0 // indirect
+	google.golang.org/genai v1.57.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
 	google.golang.org/grpc v1.82.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
