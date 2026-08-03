@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ExternalLink, Play } from "lucide-react";
-import { Card, SectionTitle } from "./Primitives";
+import { SectionTitle } from "./Primitives";
 
 /**
  * How long to wait for the embed before assuming it will never arrive. A
@@ -59,57 +59,59 @@ export default function RibbieGamecast({
         title="Watch in 8-Bit"
         subtitle="Ribbie's pixel-art gamecast"
       />
-      <Card pad={false}>
-        <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
-          {timedOut ? (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-pitch-800 to-black px-6 text-center">
-              <p className="text-sm text-pitch-300/70">
-                Couldn't load the gamecast.
-              </p>
-              <a
-                href={gameUrl(gamePk)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-accent"
-              >
-                <ExternalLink size={14} /> Open on ribbie.tv
-              </a>
-            </div>
-          ) : watching ? (
-            <iframe
-              src={gameUrl(gamePk)}
-              title={`Ribbie 8-bit gamecast — ${matchup}`}
-              className="h-full w-full border-0"
-              loading="lazy"
-              referrerPolicy="strict-origin-when-cross-origin"
-              sandbox="allow-scripts allow-same-origin allow-popups"
-              allowFullScreen
-              onLoad={() => setLoaded(true)}
-            />
-          ) : (
-            <>
-              {posterFailed ? (
-                <div className="h-full w-full bg-gradient-to-br from-pitch-800 to-black" />
-              ) : (
-                <img
-                  src={`${gameUrl(gamePk)}/og`}
-                  alt={`Ribbie's pixel-art view of ${matchup}`}
-                  className="h-full w-full object-cover"
-                  onError={() => setPosterFailed(true)}
-                />
-              )}
-              <button
-                onClick={() => setWatching(true)}
-                className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/45 motion-safe:transition-colors hover:bg-black/25"
-              >
-                <span className="btn btn-accent pointer-events-none">
-                  <Play size={14} /> Watch
-                </span>
-              </button>
-            </>
-          )}
-        </div>
-      </Card>
+      {/* No Card wrapper: the gamecast is its own framed picture, and a card
+          behind a centered, height-capped player just shows as gutters.
+          16:9 at full width is taller than a laptop viewport, so cap the
+          height and let the width follow to keep the ratio. */}
+      <div className="relative mx-auto aspect-video w-full max-h-[60vh] max-w-[calc(60vh*16/9)] overflow-hidden rounded-xl bg-black">
+        {timedOut ? (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-pitch-800 to-black px-6 text-center">
+            <p className="text-sm text-pitch-300/70">
+              Couldn't load the gamecast.
+            </p>
+            <a
+              href={gameUrl(gamePk)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-accent"
+            >
+              <ExternalLink size={14} /> Open on ribbie.tv
+            </a>
+          </div>
+        ) : watching ? (
+          <iframe
+            src={gameUrl(gamePk)}
+            title={`Ribbie 8-bit gamecast — ${matchup}`}
+            className="h-full w-full border-0"
+            loading="lazy"
+            referrerPolicy="strict-origin-when-cross-origin"
+            sandbox="allow-scripts allow-same-origin allow-popups"
+            allowFullScreen
+            onLoad={() => setLoaded(true)}
+          />
+        ) : (
+          <>
+            {posterFailed ? (
+              <div className="h-full w-full bg-gradient-to-br from-pitch-800 to-black" />
+            ) : (
+              <img
+                src={`${gameUrl(gamePk)}/og`}
+                alt={`Ribbie's pixel-art view of ${matchup}`}
+                className="h-full w-full object-cover"
+                onError={() => setPosterFailed(true)}
+              />
+            )}
+            <button
+              onClick={() => setWatching(true)}
+              className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/45 motion-safe:transition-colors hover:bg-black/25"
+            >
+              <span className="btn btn-accent pointer-events-none">
+                <Play size={14} /> Watch
+              </span>
+            </button>
+          </>
+        )}
+      </div>
 
       <div className="mt-2 flex flex-col gap-1 text-xs text-pitch-300/60 sm:flex-row sm:items-center sm:justify-between">
         <span>
