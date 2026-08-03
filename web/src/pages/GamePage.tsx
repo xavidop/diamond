@@ -16,10 +16,12 @@ import GameInfo from "../components/ui/GameInfo";
 import { HeadToHead, RecentForm } from "../components/ui/MatchupInsights";
 import GameStatcast from "../components/ui/GameStatcast";
 import Highlights from "../components/ui/Highlights";
+import RibbieGamecast from "../components/ui/RibbieGamecast";
 import SectionNav from "../components/ui/SectionNav";
 import NotifyButton from "../components/ui/NotifyButton";
 import { Fragment, useState, type ReactNode } from "react";
 import { cn, fmtGameTime } from "../lib/utils";
+import { gameSectionOrder } from "../lib/gameSections";
 
 export default function GamePage() {
   const { gamePk } = useParams<{ gamePk: string }>();
@@ -57,6 +59,13 @@ export default function GamePage() {
   const isPreview = !isLive && !isFinal;
 
   const sections: Record<string, ReactNode> = {
+    ribbie: (
+      <RibbieGamecast
+        gamePk={id}
+        awayName={away?.teamName}
+        homeName={home?.teamName}
+      />
+    ),
     linescore: <Linescore linescore={linescore} away={away} home={home} />,
     boxscore: <Boxscore box={box} />,
     highlights: <Highlights gamePk={id} />,
@@ -109,15 +118,7 @@ export default function GamePage() {
     gameInfo: <GameInfo box={box} game={game} />,
   };
 
-  // Order sections by what matters most for the game's current state:
-  //  - finished → results (boxscore, highlights, recap)
-  //  - live → live game flow (linescore, win prob, play-by-play)
-  //  - upcoming → only the pre-game matchup; the rest has no data yet, so skip it
-  const order = isFinal
-    ? ["linescore", "boxscore", "highlights", "playByPlay", "winProb", "strikeZone", "sprayChart", "statcast", "headToHead", "recentForm", "gameInfo"]
-    : isLive
-    ? ["linescore", "winProb", "playByPlay", "boxscore", "headToHead", "recentForm", "strikeZone", "sprayChart", "statcast", "highlights", "gameInfo"]
-    : ["headToHead", "recentForm", "gameInfo"];
+  const order = gameSectionOrder(isLive ? "live" : isFinal ? "final" : "preview");
 
   return (
     <div className="space-y-6">
