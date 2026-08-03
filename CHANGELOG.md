@@ -1,3 +1,10 @@
+## [1.18.1](https://github.com/xavidop/diamond/compare/v1.18.0...v1.18.1) (2026-08-03)
+
+
+### Bug Fixes
+
+* 8bit smaller ([d176ceb](https://github.com/xavidop/diamond/commit/d176ceb3df65f657a94e30bb54b339fab30fad0f))
+
 # [1.18.0](https://github.com/xavidop/diamond/compare/v1.17.1...v1.18.0) (2026-08-03)
 
 
