@@ -1,3 +1,15 @@
+# [1.18.0](https://github.com/xavidop/diamond/compare/v1.17.1...v1.18.0) (2026-08-03)
+
+
+### Bug Fixes
+
+* bump versions ([bf62a48](https://github.com/xavidop/diamond/commit/bf62a48cf9b8001a60341223dc454e41e0b5d4ca))
+
+
+### Features
+
+* watch it in 8bits ([#80](https://github.com/xavidop/diamond/issues/80)) ([a08f537](https://github.com/xavidop/diamond/commit/a08f537fd770958117d1e97fc3e8636fb469b392))
+
 ## [1.17.1](https://github.com/xavidop/diamond/compare/v1.17.0...v1.17.1) (2026-07-23)
 
 
