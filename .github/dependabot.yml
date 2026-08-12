@@ -21,6 +21,16 @@ updates:
     commit-message:
       prefix: build
       include: scope
+    groups:
+      # react and react-dom must resolve to the exact same version or
+      # react-dom throws at mount (React error #527) and the app renders
+      # nothing. Keep them in a single PR so they never drift apart.
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
 
   # ── npm: landing site ────────────────────────────────────
   - package-ecosystem: npm
