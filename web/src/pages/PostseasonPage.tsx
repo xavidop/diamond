@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api, teamLogoUrl } from "../api/mlb";
@@ -9,7 +9,9 @@ import {
   SectionTitle,
   Spinner,
 } from "../components/ui/Primitives";
+import YearPicker from "../components/ui/YearPicker";
 import { useSport } from "../contexts/SportContext";
+import { resolvePostseasonSeason } from "../lib/postseason";
 
 type Game = {
   gamePk: number;
@@ -58,22 +60,53 @@ function roundIndex(g: Game): number {
 export default function PostseasonPage() {
   const [params, setParams] = useSearchParams();
   const { sportId } = useSport();
-  const season =
-    params.get("season") ?? String(new Date().getFullYear() - 1);
+  const queryClient = useQueryClient();
+  const urlSeason = params.get("season");
   const setSeason = (s: string) => {
     const p = new URLSearchParams(params);
     p.set("season", s);
     setParams(p, { replace: true });
   };
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["postseason", season, sportId],
-    queryFn: () => api.postseason(season, sportId),
+  // With no ?season, open on this year once its bracket is set (or a club
+  // has clinched), else last year. The current-year probe goes through the
+  // same query key as the bracket so it isn't fetched twice.
+  const defaultSeason = useQuery({
+    queryKey: ["postseason-default", sportId],
+    enabled: !urlSeason,
+    staleTime: 10 * 60_000,
+    queryFn: () =>
+      resolvePostseasonSeason(
+        new Date(),
+        (s) =>
+          queryClient.fetchQuery({
+            queryKey: ["postseason", s, sportId],
+            queryFn: () => api.postseason(s, sportId),
+          }),
+        // Clinch flags only exist for the MLB (AL/NL) standings.
+        sportId === 1
+          ? (s) => api.standings({ season: s, leagueId: "103,104" })
+          : undefined
+      ),
   });
+  const season = urlSeason ?? defaultSeason.data;
+
+  const { data, isLoading: bracketLoading, error } = useQuery({
+    queryKey: ["postseason", season, sportId],
+    queryFn: () => api.postseason(season!, sportId),
+    enabled: !!season,
+  });
+  const isLoading = bracketLoading || (!season && defaultSeason.isLoading);
 
   const series = useMemo<Series[]>(() => {
     const dates = (data?.dates ?? []) as any[];
-    const games: Game[] = dates.flatMap((d) => d.games ?? []);
+    // A postponed game is listed under both its original and makeup dates
+    // with the same gamePk; keep the later (rescheduled) entry only.
+    const games: Game[] = Array.from(
+      new Map<number, Game>(
+        dates.flatMap((d) => d.games ?? []).map((g: Game) => [g.gamePk, g])
+      ).values()
+    );
     const byKey = new Map<string, Series>();
     for (const g of games) {
       const desc = g.seriesDescription ?? "Series";
@@ -113,15 +146,12 @@ export default function PostseasonPage() {
     <div className="space-y-6">
       <SectionTitle
         title="Postseason Bracket"
-        subtitle={`Series breakdown for ${season}.`}
+        subtitle={season ? `Series breakdown for ${season}.` : "Series breakdown."}
         right={
-          <input
-            type="number"
+          <YearPicker
             value={season}
             min={1903}
-            max={new Date().getFullYear()}
-            onChange={(e) => setSeason(e.target.value)}
-            className="input w-28"
+            onChange={(y) => y != null && setSeason(String(y))}
           />
         }
       />

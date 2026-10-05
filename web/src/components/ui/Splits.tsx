@@ -3,6 +3,7 @@ import { useState } from "react";
 import { api } from "../../api/mlb";
 import { Card, Empty, Spinner } from "./Primitives";
 import { cn } from "../../lib/utils";
+import YearPicker from "./YearPicker";
 
 /**
  * Common MLB Stats API "situation" codes (sitCodes) for /people/{id}/stats?stats=statSplits.
@@ -96,13 +97,10 @@ export default function Splits({
           </div>
           <div className="text-sm">vs L/R, home/away, day/night, more</div>
         </div>
-        <input
-          type="number"
+        <YearPicker
           value={season}
           min={1901}
-          max={new Date().getFullYear()}
-          onChange={(e) => setSeason(e.target.value)}
-          className="input w-24 text-center"
+          onChange={(y) => y != null && setSeason(String(y))}
         />
       </div>
 

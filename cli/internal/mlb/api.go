@@ -303,11 +303,61 @@ func (c *Client) PostseasonSchedule(season string) ([]PostseasonGame, error) {
 	if err := c.get(url, &resp); err != nil {
 		return nil, err
 	}
+	// A postponed game is listed under both its original and makeup dates
+	// with the same gamePk; keep the later (rescheduled) entry only.
 	var games []PostseasonGame
+	idx := map[int]int{}
 	for _, d := range resp.Dates {
-		games = append(games, d.Games...)
+		for _, g := range d.Games {
+			if i, ok := idx[g.GamePk]; ok {
+				games[i] = g
+				continue
+			}
+			idx[g.GamePk] = len(games)
+			games = append(games, g)
+		}
 	}
 	return games, nil
+}
+
+// CurrentPostseason picks the season the postseason view opens on: this year
+// once its bracket has real clubs in it or a club has clinched a berth,
+// otherwise last year's completed postseason. It returns that season's games
+// so callers don't fetch them twice.
+func (c *Client) CurrentPostseason(now time.Time) (string, []PostseasonGame, error) {
+	cur := strconv.Itoa(now.Year())
+	games, err := c.PostseasonSchedule(cur)
+	if err == nil && HasPostseasonClubs(games) {
+		return cur, games, nil
+	}
+	if recs, serr := c.Standings(1, cur); serr == nil && anyClinched(recs) {
+		return cur, games, nil
+	}
+	prev := strconv.Itoa(now.Year() - 1)
+	games, err = c.PostseasonSchedule(prev)
+	return prev, games, err
+}
+
+// HasPostseasonClubs reports whether any game has a real club in it rather
+// than only seed placeholders ("AL Higher Seed", "Lower Seed League Champion").
+func HasPostseasonClubs(games []PostseasonGame) bool {
+	for _, g := range games {
+		if g.Teams.Away.Team.Division.ID != 0 || g.Teams.Home.Team.Division.ID != 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func anyClinched(recs []StandingsRecord) bool {
+	for _, r := range recs {
+		for _, t := range r.TeamRecords {
+			if t.Clinched {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (c *Client) WildCardStandings(sportID int, season string) ([]StandingsRecord, error) {

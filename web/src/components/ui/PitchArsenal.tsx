@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { api } from "../../api/mlb";
 import { Card, Empty, Spinner } from "./Primitives";
+import YearPicker from "./YearPicker";
 
 type PitchSummary = {
   type: string;
@@ -174,13 +175,10 @@ export default function PitchArsenal({
               </button>
             ))}
           </div>
-          <input
-            type="number"
+          <YearPicker
             value={season}
-            onChange={(e) =>
-              setSeason(Number(e.target.value || new Date().getFullYear()))
-            }
-            className="input w-20 text-center"
+            min={2008}
+            onChange={(y) => y != null && setSeason(y)}
           />
         </div>
       </div>

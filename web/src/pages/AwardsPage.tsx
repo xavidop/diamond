@@ -10,6 +10,7 @@ import {
   SectionTitle,
   Spinner,
 } from "../components/ui/Primitives";
+import YearPicker from "../components/ui/YearPicker";
 
 const FEATURED = [
   "MLBMVP",
@@ -62,12 +63,11 @@ export default function AwardsPage() {
         title="Awards"
         subtitle="MVP, Cy Young, Rookie of the Year and more — by season."
         right={
-          <input
-            type="number"
-            placeholder="Year (optional)"
+          <YearPicker
             value={season}
-            onChange={(e) => setSeason(e.target.value)}
-            className="input w-36"
+            allowEmpty
+            placeholder="All years"
+            onChange={(y) => setSeason(y == null ? "" : String(y))}
           />
         }
       />

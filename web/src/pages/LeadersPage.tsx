@@ -23,6 +23,7 @@ import { usePins } from "../contexts/PinsContext";
 import { useChartPalette } from "../contexts/ThemeContext";
 import { Pin as PinIcon, PinOff } from "lucide-react";
 import StatHeader from "../components/ui/StatHeader";
+import YearPicker from "../components/ui/YearPicker";
 
 const HITTING_LEADERS = [
   { id: "homeRuns", label: "HR" },
@@ -125,13 +126,10 @@ export default function LeadersPage() {
                 { key: "value", label },
               ]}
             />
-            <input
-              type="number"
+            <YearPicker
               value={season}
               min={1901}
-              max={new Date().getFullYear()}
-              onChange={(e) => setSeason(e.target.value)}
-              className="input w-28"
+              onChange={(y) => y != null && setSeason(String(y))}
             />
           </div>
         }

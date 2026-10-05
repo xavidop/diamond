@@ -128,6 +128,7 @@ type Standing struct {
 	WildCardRank              string `json:"wildCardRank"`
 	WildCardEliminationNumber string `json:"wildCardEliminationNumber"`
 	WildCardLeader            bool   `json:"wildCardLeader"`
+	Clinched                  bool   `json:"clinched"`
 	RunsScored                int    `json:"runsScored"`
 	RunsAllowed               int    `json:"runsAllowed"`
 	Records                   struct {
@@ -480,6 +481,11 @@ type PostseasonTeamInfo struct {
 		ID           int    `json:"id"`
 		Name         string `json:"name"`
 		Abbreviation string `json:"abbreviation"`
+		// Division is only set for real clubs; the "NL Lower Seed"-style
+		// placeholders MLB schedules before matchups are known have none.
+		Division struct {
+			ID int `json:"id"`
+		} `json:"division"`
 	} `json:"team"`
 	Score        int  `json:"score"`
 	IsWinner     bool `json:"isWinner"`

@@ -238,6 +238,9 @@
   html.light .card { @apply bg-white border-[rgba(0,0,0,0.08)] shadow-sm; }
   html.light .btn { @apply bg-white/70 hover:bg-white border-black/10 text-pitch-800; }
   html.light .input { @apply bg-white border-black/10 text-pitch-800 placeholder:text-pitch-400; }
+  html.light .year-pop { @apply bg-white/95 border-black/10 text-pitch-800; }
+  html.light .year-cell:not([aria-pressed="true"]):hover { @apply bg-black/[0.06]; }
+  html.light .year-pop .text-volt-500 { color: #5a6800; }
   html.light .pill { @apply bg-black/5 border-[rgba(0,0,0,0.08)] text-pitch-700; }
   html.light .table-base thead th,
   html.light .table-base tbody td { @apply border-[rgba(0,0,0,0.08)]; }

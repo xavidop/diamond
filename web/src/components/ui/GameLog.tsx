@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { api, teamLogoUrl } from "../../api/mlb";
 import { Card, Empty, Spinner } from "./Primitives";
+import YearPicker from "./YearPicker";
 
 const HITTING_COLS = [
   ["atBats", "AB"],
@@ -114,13 +115,10 @@ export default function GameLog({
             {isPitcher ? "ERA" : "AVG"}
           </div>
         </div>
-        <input
-          type="number"
+        <YearPicker
           value={season}
           min={1901}
-          max={new Date().getFullYear()}
-          onChange={(e) => setSeason(Number(e.target.value || new Date().getFullYear()))}
-          className="input w-24 text-center"
+          onChange={(y) => y != null && setSeason(y)}
         />
       </div>
 

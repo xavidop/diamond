@@ -9,6 +9,7 @@ import {
   SectionTitle,
   Spinner,
 } from "../components/ui/Primitives";
+import YearPicker from "../components/ui/YearPicker";
 
 const CURRENT = new Date().getFullYear();
 
@@ -43,13 +44,12 @@ export default function DraftPage() {
         subtitle="Browse picks by year and round."
         right={
           <div className="flex items-center gap-2">
-            <input
-              type="number"
+            <YearPicker
+              value={year}
               min={1965}
               max={CURRENT}
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value || CURRENT))}
-              className="input w-28 text-center font-mono"
+              label="Draft year"
+              onChange={(y) => y != null && setYear(y)}
             />
           </div>
         }

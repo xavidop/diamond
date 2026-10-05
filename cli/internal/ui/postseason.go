@@ -12,7 +12,8 @@ import (
 )
 
 type postseasonLoadedMsg struct {
-	games []mlb.PostseasonGame
+	season string
+	games  []mlb.PostseasonGame
 }
 
 var gameTypeOrder = map[string]int{
@@ -38,9 +39,10 @@ type PostseasonModel struct {
 	width   int
 }
 
+// NewPostseasonModel starts with no season; the first fetch resolves it to
+// this year once the bracket is set, else last year.
 func NewPostseasonModel() PostseasonModel {
-	season := fmt.Sprintf("%d", time.Now().Year()-1)
-	return PostseasonModel{season: season, loading: true, client: mlb.DefaultClient()}
+	return PostseasonModel{loading: true, client: mlb.DefaultClient()}
 }
 
 func (m PostseasonModel) Init() tea.Cmd { return m.fetch() }
@@ -48,11 +50,17 @@ func (m PostseasonModel) Init() tea.Cmd { return m.fetch() }
 func (m PostseasonModel) fetch() tea.Cmd {
 	season, c := m.season, m.client
 	return func() tea.Msg {
-		games, err := c.PostseasonSchedule(season)
+		var games []mlb.PostseasonGame
+		var err error
+		if season == "" {
+			season, games, err = c.CurrentPostseason(time.Now())
+		} else {
+			games, err = c.PostseasonSchedule(season)
+		}
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
-		return postseasonLoadedMsg{games: games}
+		return postseasonLoadedMsg{season: season, games: games}
 	}
 }
 
@@ -62,6 +70,9 @@ func (m PostseasonModel) Update(msg tea.Msg) (PostseasonModel, tea.Cmd) {
 		m.width = msg.Width
 	case postseasonLoadedMsg:
 		m.loading, m.err, m.games, m.scroll = false, nil, msg.games, 0
+		if msg.season != "" {
+			m.season = msg.season
+		}
 		m.gamePks = orderedGamePks(msg.games)
 		m.cursor = 0
 	case ErrMsg:
@@ -94,12 +105,18 @@ func (m PostseasonModel) Update(msg tea.Msg) (PostseasonModel, tea.Cmd) {
 				return m, func() tea.Msg { return NavigateMsg{View: ViewGame, GamePk: gk} }
 			}
 		case "right", "l":
+			if m.season == "" {
+				break
+			}
 			y, _ := strconvAtoi(m.season)
 			m.season = fmt.Sprintf("%d", y+1)
 			m.loading, m.games, m.scroll = true, nil, 0
 			m.gamePks, m.cursor = nil, 0
 			return m, m.fetch()
 		case "left", "h":
+			if m.season == "" {
+				break
+			}
 			y, _ := strconvAtoi(m.season)
 			m.season = fmt.Sprintf("%d", y-1)
 			m.loading, m.games, m.scroll = true, nil, 0
@@ -546,7 +563,11 @@ func (m PostseasonModel) View() string {
 	panelHdr := PanelHeader("POSTSEASON", m.width)
 
 	if m.loading {
-		return panelHdr + "\n\n" + loadingView("Loading "+m.season+" postseason…")
+		label := "Loading postseason…"
+		if m.season != "" {
+			label = "Loading " + m.season + " postseason…"
+		}
+		return panelHdr + "\n\n" + loadingView(label)
 	}
 	if len(m.games) == 0 {
 		return panelHdr + "\n\n" + StyleDim.Render("  No postseason data for "+m.season+".") +

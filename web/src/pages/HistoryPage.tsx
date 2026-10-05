@@ -10,6 +10,7 @@ import {
 } from "../components/ui/Primitives";
 import { Link, useSearchParams } from "react-router-dom";
 import { Trophy, GitCompare } from "lucide-react";
+import YearPicker from "../components/ui/YearPicker";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -127,39 +128,22 @@ export default function HistoryPage() {
         subtitle="Look up any past season — standings, leaders, World Series champ."
         right={
           <div className="flex items-center gap-2">
-            <button
-              className="btn"
-              onClick={() => setSeason((s) => Math.max(1901, s - 1))}
-            >
-              −
-            </button>
-            <input
-              type="number"
+            <YearPicker
+              value={season}
               min={1876}
               max={CURRENT_YEAR}
-              value={season}
-              onChange={(e) => setSeason(Number(e.target.value || CURRENT_YEAR))}
-              className="input w-28 text-center font-mono text-lg"
+              onChange={(y) => y != null && setSeason(y)}
             />
-            <button
-              className="btn"
-              onClick={() => setSeason((s) => Math.min(CURRENT_YEAR, s + 1))}
-            >
-              +
-            </button>
             <div className="ml-2 flex items-center gap-1 pl-2 border-l border-white/10">
               <GitCompare size={14} className="text-pitch-300/70" />
-              <input
-                type="number"
+              <YearPicker
+                value={compare}
                 min={1876}
                 max={CURRENT_YEAR}
+                allowEmpty
                 placeholder="vs"
-                value={compare ?? ""}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setCompare(v ? Number(v) : null);
-                }}
-                className="input w-24 text-center font-mono"
+                label="Compare season"
+                onChange={setCompare}
               />
               {compare !== null && (
                 <button

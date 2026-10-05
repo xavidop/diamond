@@ -10,6 +10,7 @@ import {
 } from "../components/ui/Primitives";
 import { useMemo, useState } from "react";
 import { useSport } from "../contexts/SportContext";
+import YearPicker from "../components/ui/YearPicker";
 
 type View = "division" | "wildcard" | "diff";
 
@@ -104,13 +105,10 @@ export default function StandingsPage() {
                 </button>
               ))}
             </div>
-            <input
-              type="number"
-              min={1901}
-              max={new Date().getFullYear()}
+            <YearPicker
               value={season}
-              onChange={(e) => setSeason(e.target.value)}
-              className="input w-24"
+              min={1901}
+              onChange={(y) => y != null && setSeason(String(y))}
             />
           </div>
         }
