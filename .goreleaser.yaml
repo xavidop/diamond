@@ -118,12 +118,22 @@ homebrew_casks:
     homepage: "https://github.com/xavidop/diamond"
     description: "⚾ MLB stats in your terminal"
     # Remove the macOS quarantine attribute so the unsigned binary runs.
-    hooks:
-      post:
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/diamond"]
-          end
+    # Homebrew deprecated the Ruby postflight block that hooks.post.install
+    # writes; its replacement, postflight_steps, is declarative and cannot
+    # read staged_path, so the path is the {{staged_path}} token instead.
+    # GoReleaser 2.18 has no install_steps option (2.19 adds
+    # hooks.post.install_steps), so the block goes in custom_block, which
+    # renders at the top of the cask. The whole cask is run through
+    # GoReleaser's templates, hence {{ "{{" }} to emit Homebrew's braces.
+    custom_block: |
+      postflight_steps do
+        on_macos do
+          run "/usr/bin/xattr",
+              args:           ["-dr", "com.apple.quarantine", "{{ "{{" }}staged_path}}/diamond"],
+              writable_paths: ["diamond"],
+              writable_base:  :staged_path
+        end
+      end
 
 release:
   github:
