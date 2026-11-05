@@ -37,6 +37,10 @@ export const ENDPOINTS: EndpointDef[] = [
     description: "Games for a date / date range. Hydrate for more detail.",
     queryParams: [
       { name: "sportId", defaultValue: "1" },
+      {
+        name: "leagueId",
+        help: "Narrow a multi-league sport to one league, e.g. 131 (LIDOM) under sportId 17.",
+      },
       { name: "date", placeholder: "YYYY-MM-DD", defaultValue: today },
       { name: "startDate", placeholder: "YYYY-MM-DD" },
       { name: "endDate", placeholder: "YYYY-MM-DD" },
@@ -103,7 +107,7 @@ export const ENDPOINTS: EndpointDef[] = [
     queryParams: [
       { name: "sportId", defaultValue: "1" },
       { name: "season", defaultValue: season },
-      { name: "leagueIds" },
+      { name: "leagueIds", help: "Comma-separated league ids, e.g. 131,135 for LIDOM + LVBP." },
       { name: "activeStatus", placeholder: "Y, N, B" },
     ],
   },

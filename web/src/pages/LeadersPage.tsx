@@ -8,6 +8,7 @@ import {
 } from "../components/ui/Primitives";
 import { Link, useSearchParams } from "react-router-dom";
 import { useSport } from "../contexts/SportContext";
+import { useLeagues } from "../hooks/useLeagues";
 import {
   CartesianGrid,
   ResponsiveContainer,
@@ -48,6 +49,7 @@ export default function LeadersPage() {
   const group: "hitting" | "pitching" =
     params.get("group") === "pitching" ? "pitching" : "hitting";
   const { sportId, sport } = useSport();
+  const { league, leagueId } = useLeagues();
   const cats = group === "hitting" ? HITTING_LEADERS : PITCHING_LEADERS;
   const cat =
     cats.find((c) => c.id === params.get("cat"))?.id ?? cats[0].id;
@@ -65,8 +67,10 @@ export default function LeadersPage() {
     patch({ group: g, cat: undefined });
   const setCat = (c: string) => patch({ cat: c });
 
+  // /stats/leaders accepts leagueId, so a Winter Leagues league filter yields
+  // that league's leaders instead of a mixed LIDOM/LVBP/LMP board.
   const { data, isLoading, error } = useQuery({
-    queryKey: ["leaders", sportId, season, group, cat],
+    queryKey: ["leaders", sportId, leagueId, season, group, cat],
     queryFn: () =>
       api.statsLeaders({
         leaderCategories: cat,
@@ -74,6 +78,7 @@ export default function LeadersPage() {
         season,
         sportId,
         limit: 25,
+        ...(leagueId != null ? { leagueId } : {}),
       }),
   });
 
@@ -96,7 +101,7 @@ export default function LeadersPage() {
   return (
     <div className="space-y-6">
       <SectionTitle
-        title={`${sport.abbreviation} Stat Leaders`}
+        title={`${league?.abbreviation ?? sport.abbreviation} Stat Leaders`}
         right={
           <div className="flex items-center gap-2">
             <button

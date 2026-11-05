@@ -11,6 +11,8 @@ import { cn } from "../../lib/utils";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSport } from "../../contexts/SportContext";
 import SportPicker from "./SportPicker";
+import LeagueBar from "./LeagueBar";
+import { useLeagues } from "../../hooks/useLeagues";
 import { useFavorites } from "../../contexts/FavoritesContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { Spinner } from "../ui/Primitives";
@@ -159,6 +161,8 @@ export default function AppLayout() {
         {/* Page content */}
         <main ref={mainRef} className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:py-8 lg:pb-8">
+            {/* Sub-league filter (Winter Leagues → LIDOM, LVBP, …); hidden for MLB */}
+            <LeagueBar />
             <ErrorBoundary>
               <Suspense fallback={
                 <div className="flex items-center justify-center py-20">
@@ -225,6 +229,7 @@ function SidebarContent({
   onClose?: () => void;
 }) {
   const { sport, sportId } = useSport();
+  const { league } = useLeagues();
   const { favs } = useFavorites();
   const { theme, toggle, cbSafe, toggleCb } = useTheme();
   const liveCount = useLiveCount(sportId);
@@ -246,7 +251,8 @@ function SidebarContent({
               Diamond
             </div>
             <div className="sidebar-sub font-display font-bold text-[8px] tracking-[0.2em] uppercase text-white/25 leading-none mt-0.5">
-              {sport.abbreviation} · Stats
+              {sport.abbreviation}
+              {league ? ` · ${league.abbreviation}` : ""} · Stats
             </div>
           </div>
         </Link>

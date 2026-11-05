@@ -10,6 +10,8 @@ import {
 } from "../components/ui/Primitives";
 import { useMemo, useState } from "react";
 import { useSport } from "../contexts/SportContext";
+import { useLeagues } from "../hooks/useLeagues";
+import { standingsGamesBack } from "../api/leagues";
 import YearPicker from "../components/ui/YearPicker";
 
 type View = "division" | "wildcard" | "diff";
@@ -18,6 +20,7 @@ export default function StandingsPage() {
   const [season, setSeason] = useState(String(new Date().getFullYear()));
   const [view, setView] = useState<View>("division");
   const { sportId, sport } = useSport();
+  const { hasSubleagues, league: pickedLeague, leagueId: pickedLeagueId, leagues: subleagues } = useLeagues();
 
   const leagues = useQuery({
     queryKey: ["leagues", sportId],
@@ -28,17 +31,28 @@ export default function StandingsPage() {
     queryFn: () => api.divisions(),
   });
 
-  const allLeagues = (leagues.data?.leagues ?? []) as any[];
-  const realLeagues = allLeagues.filter((l) => l.hasWildCard);
-  const leagueId = (realLeagues.length ? realLeagues : allLeagues)
-    .map((l) => l.id)
-    .join(",");
+  const allLeagues = useMemo(() => (leagues.data?.leagues ?? []) as any[], [leagues.data]);
+  // MLB: only the AL/NL (the leagues with a wild card) — not the spring
+  // training Cactus/Grapefruit leagues. Multi-league sports (Winter Leagues):
+  // every league is a real competition, so take them all — or just the one the
+  // user filtered to. (/standings needs leagueId; sportId alone returns nothing.)
+  const leagueId = useMemo(() => {
+    if (hasSubleagues) {
+      if (pickedLeagueId != null) return String(pickedLeagueId);
+      const ids = allLeagues.length ? allLeagues.map((l) => l.id) : subleagues.map((l) => l.id);
+      return ids.join(",");
+    }
+    const realLeagues = allLeagues.filter((l) => l.hasWildCard);
+    return (realLeagues.length ? realLeagues : allLeagues).map((l) => l.id).join(",");
+  }, [hasSubleagues, pickedLeagueId, allLeagues, subleagues]);
 
   const leagueMap = useMemo(() => {
     const m = new Map<number, any>();
     for (const l of allLeagues) m.set(l.id, l);
+    // Fan-facing abbreviations (LIDOM over DWL) for multi-league sports.
+    for (const l of subleagues) m.set(l.id, { ...(m.get(l.id) ?? {}), ...l });
     return m;
-  }, [allLeagues]);
+  }, [allLeagues, subleagues]);
   const divisionMap = useMemo(() => {
     const m = new Map<number, any>();
     for (const d of (divisions.data?.divisions ?? []) as any[]) m.set(d.id, d);
@@ -61,7 +75,7 @@ export default function StandingsPage() {
     enabled: !!leagueId && view === "wildcard",
   });
 
-  const records = (data?.records ?? []) as any[];
+  const records = useMemo(() => (data?.records ?? []) as any[], [data]);
   const wcRecords = (wildcard.data?.records ?? []) as any[];
 
   // Group division records by league (first-seen order → AL then NL) so each
@@ -86,12 +100,18 @@ export default function StandingsPage() {
   return (
     <div className="space-y-6">
       <SectionTitle
-        title={`${sport.abbreviation} Standings`}
-        subtitle="Division, wild card, and run differential views."
+        title={`${pickedLeague?.abbreviation ?? sport.abbreviation} Standings`}
+        subtitle={
+          pickedLeague
+            ? `${pickedLeague.name} · standings and run differential.`
+            : hasSubleagues
+              ? "One table per league. Pick a league above to focus on it."
+              : "Division, wild card, and run differential views."
+        }
         right={
           <div className="flex items-center gap-2">
             <div className="flex rounded-lg border border-white/10 overflow-hidden">
-              {(["division", "wildcard", "diff"] as View[]).map((v) => (
+              {(hasSubleagues ? (["division", "diff"] as View[]) : (["division", "wildcard", "diff"] as View[])).map((v) => (
                 <button
                   key={v}
                   onClick={() => setView(v)}
@@ -101,7 +121,7 @@ export default function StandingsPage() {
                       : "bg-pitch-900/40 hover:bg-pitch-800"
                   }`}
                 >
-                  {v === "diff" ? "Run Diff" : v}
+                  {v === "diff" ? "Run Diff" : v === "division" && hasSubleagues ? "Table" : v}
                 </button>
               ))}
             </div>
@@ -218,8 +238,12 @@ function DivisionTable({
   const rows = (rec.teamRecords ?? []) as any[];
   const leagueName = league?.name ?? rec.league?.name;
   const leagueAbbr = league?.abbreviation;
+  // Winter leagues have no divisions: the league itself is the table.
   const divisionName =
-    division?.nameShort ?? division?.name ?? rec.division?.name ?? "Division";
+    division?.nameShort ??
+    division?.name ??
+    rec.division?.name ??
+    (leagueAbbr ? `${leagueAbbr} · Standings` : leagueName ?? "Standings");
 
   return (
     <Card pad={false}>
@@ -295,7 +319,9 @@ function DivisionTable({
                   <td className="text-right tabular-nums">
                     {r.winningPercentage}
                   </td>
-                  <td className="text-right tabular-nums">{r.gamesBack}</td>
+                  <td className="text-right tabular-nums">
+                    {standingsGamesBack(!!(division ?? rec.division), r)}
+                  </td>
                   <td className="text-right tabular-nums text-pitch-300">
                     {magic}
                   </td>

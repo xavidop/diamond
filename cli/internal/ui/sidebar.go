@@ -57,16 +57,25 @@ type Sidebar struct {
 
 func NewSidebar() Sidebar { return Sidebar{} }
 
+// sportLabel is the short chrome label for the current selection: "MLB", or
+// "WIN·LIDOM" when a winter league is filtered.
+func sportLabel(sport mlb.Sport, league mlb.League) string {
+	if league.IsAll() || league.Abbreviation == "" {
+		return sport.Abbreviation
+	}
+	return sport.Abbreviation + "·" + league.Abbreviation
+}
+
 // View renders the sidebar. focused dims/highlights the border + shows the
 // cursor; active is the content view currently shown (rendered in gold).
-func (s Sidebar) View(focused bool, sport mlb.Sport, active ViewID, games []mlb.Game) string {
+func (s Sidebar) View(focused bool, sport mlb.Sport, league mlb.League, active ViewID, games []mlb.Game) string {
 	start, end := headerColors()
 	phase := float64(animFrame) * 0.018
 
 	var b strings.Builder
 	// Brand
 	b.WriteString(StyleAccent.Render("⚾ ") + gradientShimmer("DIAMOND", start, end, phase) + "\n")
-	b.WriteString(StyleDim.Render("["+sport.Abbreviation+" ▾]  "+version.Short()) + "\n")
+	b.WriteString(StyleDim.Render("["+sportLabel(sport, league)+" ▾]  "+version.Short()) + "\n")
 	b.WriteString(StyleDim.Render(strings.Repeat("─", 18)) + "\n")
 
 	activeIdx := navIndexFor(active)

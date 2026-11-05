@@ -17,9 +17,12 @@ var AllSports = []Sport{
 	{ID: 14, Code: "afx", Name: "Single-A", Abbreviation: "Single-A"},
 	{ID: 16, Code: "rok", Name: "Rookie", Abbreviation: "ROK"},
 	{ID: 17, Code: "win", Name: "Winter Leagues", Abbreviation: "WIN"},
-	{ID: 6004, Code: "kbo", Name: "Korean Baseball Organization", Abbreviation: "KBO"},
-	{ID: 6005, Code: "jpb", Name: "Nippon Professional Baseball", Abbreviation: "NPB"},
-	{ID: 22, Code: "bbc", Name: "College Baseball", Abbreviation: "COL"},
+	// IDs per /api/v1/sports (6005 is amateur international ball, not NPB).
+	// The API lists KBO/NPB but serves no teams or games for them; kept so the
+	// catalog matches the web app and the API.
+	{ID: 32, Code: "kor", Name: "Korean Baseball Organization", Abbreviation: "KBO"},
+	{ID: 31, Code: "jml", Name: "Nippon Professional Baseball", Abbreviation: "NPB"},
+	{ID: 22, Code: "bbc", Name: "College Baseball", Abbreviation: "College"},
 }
 
 type Team struct {
@@ -61,7 +64,10 @@ type TeamGameInfo struct {
 		ID           int    `json:"id"`
 		Name         string `json:"name"`
 		Abbreviation string `json:"abbreviation"`
-		League       struct {
+		// League is set when the schedule is hydrated with `team`; for Winter
+		// Leagues it tells LIDOM from LVBP from LMP (see leagues.go).
+		League struct {
+			ID   int    `json:"id"`
 			Name string `json:"name"`
 		} `json:"league"`
 	} `json:"team"`
@@ -119,10 +125,14 @@ type Standing struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
 	} `json:"team"`
-	Wins                      int    `json:"wins"`
-	Losses                    int    `json:"losses"`
-	WinningPercentage         string `json:"winningPercentage"`
-	GamesBack                 string `json:"gamesBack"`
+	Wins              int    `json:"wins"`
+	Losses            int    `json:"losses"`
+	WinningPercentage string `json:"winningPercentage"`
+	GamesBack         string `json:"gamesBack"`
+	// LeagueGamesBack is games behind the league leader. For division-less
+	// leagues (the winter leagues) the API's GamesBack is measured from the
+	// playoff cutoff instead (leaders show negative values), so use this one.
+	LeagueGamesBack           string `json:"leagueGamesBack"`
 	StreakCode                string `json:"streakCode"`
 	WildCardGamesBack         string `json:"wildCardGamesBack"`
 	WildCardRank              string `json:"wildCardRank"`
