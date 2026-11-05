@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/xavidop/diamond/compare/v1.18.4...v1.19.0) (2026-11-05)
+
+
+### Features
+
+* **leagues:** tell winter sub-leagues apart (LIDOM, LVBP, LMP, LBPRC, AFL, ABL, CS) ([#171](https://github.com/xavidop/diamond/issues/171)) ([7fbaaf9](https://github.com/xavidop/diamond/commit/7fbaaf911d097f6d4b5a896fd0a116973f0915b5))
+
 ## [1.18.4](https://github.com/xavidop/diamond/compare/v1.18.3...v1.18.4) (2026-10-22)
 
 
