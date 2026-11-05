@@ -3,6 +3,7 @@ package mlb
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -140,6 +141,47 @@ func (c *Client) Leagues(sportID int) ([]League, error) {
 		return nil, err
 	}
 	return MergeLeagues(resp.Leagues, sportID), nil
+}
+
+// FindSport resolves a user-typed sport — code ("win"), abbreviation ("WIN"),
+// name ("winter leagues") or id ("17") — against AllSports, case-insensitively.
+func FindSport(q string) (Sport, bool) {
+	q = strings.TrimSpace(strings.ToLower(q))
+	if q == "" {
+		return Sport{}, false
+	}
+	for _, s := range AllSports {
+		if q == strings.ToLower(s.Code) || q == strings.ToLower(s.Abbreviation) ||
+			q == strings.ToLower(s.Name) || q == strconv.Itoa(s.ID) {
+			return s, true
+		}
+	}
+	return Sport{}, false
+}
+
+// FindLeague resolves a user-typed league — abbreviation ("LIDOM", also the
+// API's "DWL"), short name ("Dominican"), name or id ("131") — against a list.
+func FindLeague(leagues []League, q string) (League, bool) {
+	q = strings.TrimSpace(strings.ToLower(q))
+	if q == "" {
+		return League{}, false
+	}
+	for _, l := range leagues {
+		if q == strings.ToLower(l.Abbreviation) || q == strings.ToLower(l.NameShort) ||
+			q == strings.ToLower(l.Name) || q == strconv.Itoa(l.ID) {
+			return l, true
+		}
+	}
+	// Accept the API's own abbreviations too (DWL → LIDOM, VWL → LVBP, PWL → LBPRC).
+	apiAbbr := map[string]int{"dwl": 131, "vwl": 135, "pwl": 133}
+	if id, ok := apiAbbr[q]; ok {
+		for _, l := range leagues {
+			if l.ID == id {
+				return l, true
+			}
+		}
+	}
+	return League{}, false
 }
 
 // GameLeagueID returns the league a game belongs to (home team's league, else

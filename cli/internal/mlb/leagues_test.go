@@ -113,3 +113,28 @@ func TestLeagueAbbr(t *testing.T) {
 		t.Fatalf("GameLeagueAbbr = %q, want LMP", got)
 	}
 }
+
+func TestFindSportAndLeague(t *testing.T) {
+	for _, q := range []string{"win", "WIN", "Winter Leagues", "17"} {
+		s, ok := FindSport(q)
+		if !ok || s.ID != 17 {
+			t.Fatalf("FindSport(%q) = %+v, %v; want Winter Leagues", q, s, ok)
+		}
+	}
+	if _, ok := FindSport("nope"); ok {
+		t.Fatal("unknown sport should not resolve")
+	}
+	if _, ok := FindSport(""); ok {
+		t.Fatal("empty sport should not resolve")
+	}
+
+	for _, q := range []string{"lidom", "LIDOM", "Dominican", "131", "DWL"} {
+		l, ok := FindLeague(WinterLeagues, q)
+		if !ok || l.ID != 131 {
+			t.Fatalf("FindLeague(%q) = %+v, %v; want LIDOM", q, l, ok)
+		}
+	}
+	if _, ok := FindLeague(WinterLeagues, "NPB"); ok {
+		t.Fatal("unknown league should not resolve")
+	}
+}
