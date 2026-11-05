@@ -107,7 +107,7 @@ func New(ctx context.Context, p Provider, apiKey string) (cl *Client, err error)
 		c.genConfig = map[string]any{"max_tokens": 8192}
 		// It also defaults tools to strict schemas, which route through
 		// Anthropic's constrained decoding and stall the model call for tens of
-		// seconds per tool schema — with our 18 tools the first call never
+		// seconds per tool schema — with our 35+ tools the first call never
 		// returns. Disabling strict keeps tool-calling responsive (~8s); Genkit
 		// still validates tool input against the schema, so accuracy holds.
 		toolOpts = append(toolOpts, ai.WithStrictSchema(false))
