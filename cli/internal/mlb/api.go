@@ -130,25 +130,24 @@ func (c *Client) LocalDaySchedule(date string, sportID int) ([]Game, error) {
 // leagueIDs discovers the league IDs for a sport (used to build standings
 // queries for non-MLB levels, which have their own leagues).
 func (c *Client) leagueIDs(sportID int) (string, error) {
-	endpoint := fmt.Sprintf("%s/leagues?sportId=%d", c.v1, sportID)
-	var resp struct {
-		Leagues []struct {
-			ID int `json:"id"`
-		} `json:"leagues"`
-	}
-	if err := c.get(endpoint, &resp); err != nil {
+	leagues, err := c.Leagues(sportID)
+	if err != nil {
 		return "", err
 	}
-	ids := make([]string, 0, len(resp.Leagues))
-	for _, l := range resp.Leagues {
+	ids := make([]string, 0, len(leagues))
+	for _, l := range leagues {
 		ids = append(ids, strconv.Itoa(l.ID))
 	}
 	return strings.Join(ids, ","), nil
 }
 
+// Standings returns the regular-season standings for every league under a
+// sport. Use StandingsForLeague to narrow a multi-league sport (Winter Leagues)
+// to a single league.
 func (c *Client) Standings(sportID int, season string) ([]StandingsRecord, error) {
 	// MLB standings are the AL (103) + NL (104); other levels discover their
-	// own leagues so the selected sport's standings load.
+	// own leagues so the selected sport's standings load. (/standings needs
+	// leagueId — sportId alone returns nothing for the winter leagues.)
 	leagueID := "103,104"
 	if sportID != 1 {
 		ids, err := c.leagueIDs(sportID)
@@ -160,7 +159,16 @@ func (c *Client) Standings(sportID int, season string) ([]StandingsRecord, error
 		}
 		leagueID = ids
 	}
-	url := fmt.Sprintf("%s/standings?leagueId=%s&season=%s&hydrate=team,division", c.v1, leagueID, season)
+	return c.standingsByLeagueIDs(leagueID, season)
+}
+
+// StandingsForLeague returns one league's standings (e.g. 131 = LIDOM).
+func (c *Client) StandingsForLeague(leagueID int, season string) ([]StandingsRecord, error) {
+	return c.standingsByLeagueIDs(strconv.Itoa(leagueID), season)
+}
+
+func (c *Client) standingsByLeagueIDs(leagueIDs, season string) ([]StandingsRecord, error) {
+	url := fmt.Sprintf("%s/standings?leagueId=%s&season=%s&hydrate=team,division", c.v1, leagueIDs, season)
 	var resp struct {
 		Records []StandingsRecord `json:"records"`
 	}
@@ -171,7 +179,17 @@ func (c *Client) Standings(sportID int, season string) ([]StandingsRecord, error
 }
 
 func (c *Client) Leaders(group, category string, sportID int, season string) ([]Leader, error) {
+	return c.LeadersInLeague(group, category, sportID, 0, season)
+}
+
+// LeadersInLeague is Leaders narrowed to one league (leagueID 0 = whole sport);
+// /stats/leaders accepts leagueId, so a Winter Leagues pick yields that
+// league's board instead of a mixed LIDOM/LVBP/LMP one.
+func (c *Client) LeadersInLeague(group, category string, sportID, leagueID int, season string) ([]Leader, error) {
 	url := fmt.Sprintf("%s/stats/leaders?leaderCategories=%s&sportId=%d&season=%s&leaderGameTypes=R&limit=20&hydrate=person,team", c.v1, category, sportID, season)
+	if leagueID != 0 {
+		url += fmt.Sprintf("&leagueId=%d", leagueID)
+	}
 	_ = group
 	var resp struct {
 		LeagueLeaders []struct {

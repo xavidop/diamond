@@ -28,6 +28,7 @@ var divisionShort = map[string]string{
 
 type StandingsModel struct {
 	sport     mlb.Sport
+	league    mlb.League // sub-league filter for multi-league sports (ID 0 = all)
 	records   []mlb.StandingsRecord
 	wcRecords []mlb.StandingsRecord
 	tab       int
@@ -84,9 +85,15 @@ func (m StandingsModel) fetch() tea.Cmd {
 		var err1, err2 error
 		var wg sync.WaitGroup
 		wg.Add(2)
+		sportID, leagueID := m.sport.ID, m.league.ID
 		go func() {
 			defer wg.Done()
-			records, err1 = c.Standings(m.sport.ID, season)
+			if leagueID != 0 {
+				// One winter league (e.g. LIDOM) instead of all seven.
+				records, err1 = c.StandingsForLeague(leagueID, season)
+			} else {
+				records, err1 = c.Standings(sportID, season)
+			}
 		}()
 		go func() {
 			defer wg.Done()
@@ -252,14 +259,44 @@ func gbDash(s string) string {
 	return s
 }
 
+// blockTitle names a standings block: the division ("AL East") when there is
+// one, else the league itself — winter leagues have no divisions, so the
+// league (LIDOM · Liga de Béisbol Dominicano) is the table.
+func blockTitle(rec mlb.StandingsRecord) string {
+	if short, ok := divisionShort[rec.Division.Name]; ok {
+		return short
+	}
+	if rec.Division.Name != "" {
+		return rec.Division.Name
+	}
+	abbr := mlb.LeagueAbbr(nil, rec.League.ID, "")
+	switch {
+	case abbr != "" && rec.League.Name != "" && abbr != rec.League.Name:
+		return abbr + " · " + rec.League.Name
+	case rec.League.Name != "":
+		return rec.League.Name
+	case abbr != "":
+		return abbr
+	}
+	return "Standings"
+}
+
+// gamesBehind picks the games-back figure for a row. Within a division the
+// API's gamesBack is behind the division leader. For division-less leagues
+// (the winter leagues) gamesBack is measured from the playoff cutoff instead —
+// leaders come out negative — so use the behind-the-leader leagueGamesBack.
+func gamesBehind(rec mlb.StandingsRecord, tr mlb.Standing) string {
+	if rec.Division.Name == "" && tr.LeagueGamesBack != "" {
+		return tr.LeagueGamesBack
+	}
+	return tr.GamesBack
+}
+
 // divBlock renders one division as a compact block (colored header + a row per
 // team), marking the team whose global index equals the cursor and starring the
 // division leader. Returns the lines and the team count.
 func (m StandingsModel) divBlock(rec mlb.StandingsRecord, baseIdx, colW int) ([]string, int) {
-	name := divisionShort[rec.Division.Name]
-	if name == "" {
-		name = rec.Division.Name
-	}
+	name := blockTitle(rec)
 	nameW := colW - 17
 	if nameW > 20 {
 		nameW = 20
@@ -285,7 +322,7 @@ func (m StandingsModel) divBlock(rec mlb.StandingsRecord, baseIdx, colW int) ([]
 		} else {
 			nm = ns.Render(fmt.Sprintf("%-*s", nameW, truncate(tr.Team.Name, nameW)))
 		}
-		stats := StyleItemNormal.Render(fmt.Sprintf("%3d-%-3d %5s %5s", tr.Wins, tr.Losses, tr.WinningPercentage, gbDash(tr.GamesBack)))
+		stats := StyleItemNormal.Render(fmt.Sprintf("%3d-%-3d %5s %5s", tr.Wins, tr.Losses, tr.WinningPercentage, gbDash(gamesBehind(rec, tr))))
 		lines = append(lines, marker+nm+" "+stats)
 	}
 	return lines, len(rec.TeamRecords)
@@ -391,12 +428,20 @@ func (m StandingsModel) renderDivisionsView() string {
 		colW = 44 // compact column so the two leagues sit close, not edge-to-edge
 	}
 
+	// MLB: AL on the left, NL on the right. Multi-league sports (the winter
+	// leagues) have one block per league and no AL/NL split, so balance the
+	// blocks across the two columns in display order instead.
 	var al, nl []mlb.StandingsRecord
-	for _, d := range divs {
-		if d.League.ID == 104 {
-			nl = append(nl, d)
-		} else {
-			al = append(al, d)
+	if m.sport.HasSubleagues() {
+		half := (len(divs) + 1) / 2
+		al, nl = divs[:half], divs[half:]
+	} else {
+		for _, d := range divs {
+			if d.League.ID == 104 {
+				nl = append(nl, d)
+			} else {
+				al = append(al, d)
+			}
 		}
 	}
 
@@ -459,7 +504,11 @@ func (m StandingsModel) View() string {
 		return PanelHeader("STANDINGS", m.width) + "\n\n" + loadingView("Loading standings…")
 	}
 
-	panelHdr := PanelHeader("STANDINGS", m.width)
+	title := "STANDINGS"
+	if !m.league.IsAll() && m.league.Abbreviation != "" {
+		title += " · " + m.league.Abbreviation
+	}
+	panelHdr := PanelHeader(title, m.width)
 
 	tabs := ""
 	for i, n := range standingsTabNames {

@@ -48,7 +48,12 @@ type NavigateMsg struct {
 	PlayerID int
 }
 
-type SportChangedMsg struct{ Sport mlb.Sport }
+// SportChangedMsg switches the app to a sport and, for multi-league sports like
+// the winter leagues, optionally narrows it to one league (League.ID 0 = all).
+type SportChangedMsg struct {
+	Sport  mlb.Sport
+	League mlb.League
+}
 type ErrMsg struct{ Err error }
 type TickMsg struct{}
 
@@ -115,6 +120,7 @@ type App struct {
 	collapsed     bool
 	autoCollapsed bool
 	sport         mlb.Sport
+	league        mlb.League // sub-league filter for multi-league sports (ID 0 = all)
 	width         int
 	height        int
 	showLeague    bool
@@ -297,13 +303,26 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		na, c := a.navigate(msg)
 		return na, c
 
+	case leaguesLoadedMsg:
+		var cmd tea.Cmd
+		a.leaguePicker, cmd = a.leaguePicker.Update(msg)
+		return a, cmd
+
 	case SportChangedMsg:
 		a.sport = msg.Sport
+		a.league = msg.League
+		if !a.sport.HasSubleagues() {
+			a.league = mlb.League{}
+		}
 		a.showLeague = false
+		a.leaguePicker = NewLeaguePickerModel(a.sport, a.league)
 		a.scores = NewScoresModel(a.sport)
+		a.scores.league = a.league
 		a.scores.notifySubs = a.notifySubs
 		a.standings = NewStandingsModel(a.sport)
+		a.standings.league = a.league
 		a.leaders = NewLeadersModel(a.sport)
+		a.leaders.league = a.league
 		a.team = NewTeamModel(a.sport)
 		a.player = NewPlayerModel(a.sport)
 		a.streaks = NewStreaksModel(a.sport)
@@ -714,7 +733,7 @@ func (a App) View() string {
 	if a.collapsed {
 		return content
 	}
-	side := a.sidebar.View(a.focus == focusSidebar, a.sport, a.view, a.home.games)
+	side := a.sidebar.View(a.focus == focusSidebar, a.sport, a.league, a.view, a.home.games)
 	return lipgloss.JoinHorizontal(lipgloss.Top, side, content)
 }
 
@@ -727,7 +746,7 @@ func (a App) helpView() string {
 			"  ←/→       sidebar ⇄ content (also in views)\n" +
 			"  Ctrl+B    show / hide the sidebar\n\n" +
 			StyleHeader.Render("Global") + "\n" +
-			"  L         league picker\n" +
+			"  L         league picker (› sub-leagues, e.g. LIDOM)\n" +
 			"  ?         toggle this help\n" +
 			"  r         refresh current view\n" +
 			"  q         quit\n\n" +

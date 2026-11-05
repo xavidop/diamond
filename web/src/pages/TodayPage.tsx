@@ -16,19 +16,21 @@ import { useFavorites } from "../contexts/FavoritesContext";
 import { usePins } from "../contexts/PinsContext";
 import ProbablePitchers from "../components/ui/ProbablePitchers";
 import NotifyButton from "../components/ui/NotifyButton";
+import LeaguePill from "../components/ui/LeaguePill";
+import { useLeagues } from "../hooks/useLeagues";
 
 type MlbGame = {
   gamePk: number;
   status?: { abstractGameState?: string; detailedState?: string };
   teams?: {
     home?: {
-      team?: { id?: number; name?: string };
+      team?: { id?: number; name?: string; league?: { id?: number; name?: string } };
       score?: number;
       isWinner?: boolean;
       leagueRecord?: { wins?: number; losses?: number };
     };
     away?: {
-      team?: { id?: number; name?: string };
+      team?: { id?: number; name?: string; league?: { id?: number; name?: string } };
       score?: number;
       isWinner?: boolean;
       leagueRecord?: { wins?: number; losses?: number };
@@ -49,21 +51,25 @@ type MlbLeader = {
 export default function TodayPage() {
   const date = todayIso();
   const { sportId, sport } = useSport();
+  const { league, leagueId } = useLeagues();
   const { favs } = useFavorites();
   const { pins, remove } = usePins();
 
   // Bucket by the viewer's local calendar day: a night game filed under an
   // adjacent US date still belongs to the day it's actually played locally.
-  const { games, isLoading, error } = useLocalDaySchedule<MlbGame>(date, sportId);
+  // For Winter Leagues the slate is narrowed to the selected league, if any.
+  const { games, isLoading, error } = useLocalDaySchedule<MlbGame>(date, sportId, leagueId);
+  // /stats/leaders accepts leagueId, so leaders follow the league filter too.
+  const leagueParam = leagueId != null ? { leagueId } : {};
   const hrLeaders = useQuery({
-    queryKey: ["leaders", sportId, "homeRuns"],
+    queryKey: ["leaders", sportId, leagueId, "homeRuns"],
     queryFn: () =>
-      api.statsLeaders({ leaderCategories: "homeRuns", statGroup: "hitting", sportId, limit: 5 }),
+      api.statsLeaders({ leaderCategories: "homeRuns", statGroup: "hitting", sportId, limit: 5, ...leagueParam }),
   });
   const eraLeaders = useQuery({
-    queryKey: ["leaders", sportId, "earnedRunAverage"],
+    queryKey: ["leaders", sportId, leagueId, "earnedRunAverage"],
     queryFn: () =>
-      api.statsLeaders({ leaderCategories: "earnedRunAverage", statGroup: "pitching", sportId, limit: 5 }),
+      api.statsLeaders({ leaderCategories: "earnedRunAverage", statGroup: "pitching", sportId, limit: 5, ...leagueParam }),
   });
 
   const live     = games.filter((g) => g.status?.abstractGameState === "Live");
@@ -85,7 +91,10 @@ export default function TodayPage() {
 
   return (
     <div className="space-y-8">
-      <SectionTitle title={`Today · ${sport.abbreviation}`} subtitle={dateLabel} />
+      <SectionTitle
+        title={`Today · ${league?.abbreviation ?? sport.abbreviation}`}
+        subtitle={league ? `${dateLabel} · ${league.name}` : dateLabel}
+      />
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -259,8 +268,11 @@ function GameCard({ game }: { game: MlbGame }) {
       )}
     >
       <div className="flex items-center justify-between mb-3">
-        <span className="font-display font-bold text-[9px] tracking-[0.12em] uppercase text-white/20 truncate mr-2">
-          {game.venue?.name ?? ""}
+        <span className="flex items-center gap-2 min-w-0 mr-2">
+          <LeaguePill game={game} className="text-[9px] py-0 px-1.5" />
+          <span className="font-display font-bold text-[9px] tracking-[0.12em] uppercase text-white/20 truncate">
+            {game.venue?.name ?? ""}
+          </span>
         </span>
         <div className="flex items-center gap-1 shrink-0">
           {isLive ? (

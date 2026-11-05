@@ -6,21 +6,23 @@ import { cn, fmtGameTime, shiftDate, todayIso } from "../lib/utils";
 import { useLocalDaySchedule } from "../hooks/useLocalDaySchedule";
 import { Link } from "react-router-dom";
 import { useSport } from "../contexts/SportContext";
+import { useLeagues } from "../hooks/useLeagues";
 import NotifyButton from "../components/ui/NotifyButton";
+import LeaguePill from "../components/ui/LeaguePill";
 
 type MlbGame = {
   gamePk: number;
   status?: { abstractGameState?: string; detailedState?: string };
   teams?: {
     home?: {
-      team?: { id?: number; name?: string };
+      team?: { id?: number; name?: string; league?: { id?: number; name?: string } };
       score?: number;
       isWinner?: boolean;
       leagueRecord?: { wins?: number; losses?: number };
       probablePitcher?: { fullName?: string };
     };
     away?: {
-      team?: { id?: number; name?: string };
+      team?: { id?: number; name?: string; league?: { id?: number; name?: string } };
       score?: number;
       isWinner?: boolean;
       leagueRecord?: { wins?: number; losses?: number };
@@ -36,11 +38,13 @@ type MlbGame = {
 export default function ScoreboardPage() {
   const [date, setDate] = useState(todayIso());
   const { sportId, sport } = useSport();
+  const { league, leagueId } = useLeagues();
 
   // Show the games that fall on the selected local calendar day. A night game
   // filed under an adjacent US date is bucketed onto the day it's played
   // locally, so it appears on exactly one day (never two adjacent ones).
-  const { games, isLoading, error } = useLocalDaySchedule<MlbGame>(date, sportId);
+  // For Winter Leagues the slate is narrowed to the selected league, if any.
+  const { games, isLoading, error } = useLocalDaySchedule<MlbGame>(date, sportId, leagueId);
 
   // Group by state — live first, then upcoming, then final. `games` is already
   // ordered by start time, so each group stays in start-time order.
@@ -51,8 +55,12 @@ export default function ScoreboardPage() {
   return (
     <div className="space-y-6">
       <SectionTitle
-        title={`${sport.abbreviation} Scoreboard`}
-        subtitle="Live & scheduled games. Auto-refreshes every 30s."
+        title={`${league?.abbreviation ?? sport.abbreviation} Scoreboard`}
+        subtitle={
+          league
+            ? `${league.name} · Auto-refreshes every 30s.`
+            : "Live & scheduled games. Auto-refreshes every 30s."
+        }
         right={
           <div className="flex items-center gap-2">
             <button
@@ -140,8 +148,9 @@ function GameCard({ game }: { game: MlbGame }) {
       className="card card-pad hover:bg-pitch-700 transition-colors"
     >
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 text-xs text-pitch-300/80">
-          <span className="pill">
+        <div className="flex items-center gap-2 text-xs text-pitch-300/80 min-w-0">
+          <LeaguePill game={game} />
+          <span className="pill truncate">
             {game.venue?.name ?? ""}
           </span>
           {game.seriesDescription && (

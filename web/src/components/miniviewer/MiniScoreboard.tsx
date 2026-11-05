@@ -10,6 +10,7 @@ import { todayIso } from "../../lib/utils";
 import { useLocalDaySchedule } from "../../hooks/useLocalDaySchedule";
 import { useElementWidth } from "../../hooks/useElementWidth";
 import { useMiniShortcuts } from "../../hooks/useMiniShortcuts";
+import { useLeagues } from "../../hooks/useLeagues";
 import { pitcherLine, batterLine } from "../../lib/miniBoxscore";
 import { sortGames, pickDefaultGame, isLive, type MiniGame } from "../../lib/miniviewer";
 import type { MiniMode } from "../../lib/miniStorage";
@@ -29,11 +30,13 @@ function useNow(active: boolean): number {
 
 export default function MiniScoreboard() {
   const { sportId } = useSport();
+  const { leagueId } = useLeagues();
   const { selectedGamePk, selectGame, closeMini, mode, setMode, pipWindow } = useMiniViewer();
   const date = todayIso();
 
-  // Same local-day bucketing as the Today page so the two always agree.
-  const { games: dayGames, isLoading } = useLocalDaySchedule<MiniGame>(date, sportId);
+  // Same local-day bucketing (and league filter) as the Today page so the two
+  // always agree.
+  const { games: dayGames, isLoading } = useLocalDaySchedule<MiniGame>(date, sportId, leagueId);
   const games = sortGames(dayGames);
   const selected = games.find((g) => g.gamePk === selectedGamePk) ?? null;
 

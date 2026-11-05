@@ -21,7 +21,8 @@ var pitchingLabels = []string{"ERA", "W", "K", "SV", "WHIP", "IP"}
 
 type LeadersModel struct {
 	sport     mlb.Sport
-	group     string // "hitting" or "pitching"
+	league    mlb.League // sub-league filter (ID 0 = whole sport)
+	group     string     // "hitting" or "pitching"
 	catIdx    int
 	leaders   []mlb.Leader
 	rowCursor int
@@ -55,11 +56,11 @@ func (m LeadersModel) labels() []string {
 func (m LeadersModel) fetch() tea.Cmd {
 	cat := m.cats()[m.catIdx]
 	group := m.group
-	sport := m.sport
+	sport, league := m.sport, m.league
 	season := fmt.Sprintf("%d", time.Now().Year())
 	c := m.client
 	return func() tea.Msg {
-		leaders, err := c.Leaders(group, cat, sport.ID, season)
+		leaders, err := c.LeadersInLeague(group, cat, sport.ID, league.ID, season)
 		if err != nil {
 			return ErrMsg{Err: err}
 		}

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { api, playerHeadshotUrl, teamLogoUrl } from "../api/mlb";
+import { standingsGamesBack } from "../api/leagues";
 import {
   Card,
   ErrorBox,
@@ -38,7 +39,9 @@ type StandingsRecord = {
   losses?: number;
   winningPercentage?: string;
   gamesBack?: string;
+  leagueGamesBack?: string;
   divisionRank?: string | number;
+  leagueRank?: string | number;
   streak?: { streakCode?: string };
   records?: {
     splitRecords?: Array<{ type?: string; wins?: number; losses?: number }>;
@@ -173,10 +176,17 @@ export default function TeamPage() {
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 overflow-hidden rounded-xl border-t border-l border-white/10">
             <HeaderStat label="Record" value={`${rec.wins ?? "—"}-${rec.losses ?? "—"}`} />
             <HeaderStat label="Win %" value={rec.winningPercentage ?? "—"} />
-            <HeaderStat label="Div. Rank" value={ordinal(rec.divisionRank)} />
+            {t.division?.name ? (
+              <HeaderStat label="Div. Rank" value={ordinal(rec.divisionRank)} />
+            ) : (
+              <HeaderStat label="League Rank" value={ordinal(rec.leagueRank)} />
+            )}
             <HeaderStat
               label="Games Back"
-              value={!rec.gamesBack || rec.gamesBack === "-" ? "—" : rec.gamesBack}
+              value={(() => {
+                const gb = standingsGamesBack(!!t.division?.name, rec);
+                return !gb || gb === "-" ? "—" : gb;
+              })()}
             />
             <HeaderStat
               label="Streak"

@@ -150,6 +150,7 @@ type scoresTick struct{}
 
 type ScoresModel struct {
 	sport      mlb.Sport
+	league     mlb.League // sub-league filter for multi-league sports (ID 0 = all)
 	date       time.Time
 	games      []mlb.Game
 	cursor     int
@@ -194,12 +195,12 @@ func (m ScoresModel) visibleCount() int {
 }
 
 func (m ScoresModel) fetchScores() tea.Cmd {
-	sport := m.sport
+	sport, league := m.sport, m.league
 	date := m.date.Format("2006-01-02")
 	c := m.client
 	ch := m.cache
 	return func() tea.Msg {
-		key := fmt.Sprintf("scores:%d:%s", sport.ID, date)
+		key := fmt.Sprintf("scores:%d:%d:%s", sport.ID, league.ID, date)
 		if v, ok := ch.Get(key); ok {
 			return scoresLoadedMsg{games: v.([]mlb.Game)}
 		}
@@ -210,6 +211,8 @@ func (m ScoresModel) fetchScores() tea.Cmd {
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
+		// Winter Leagues: narrow the slate to the picked league (LIDOM, LVBP…).
+		games = mlb.FilterGamesByLeague(games, league.ID)
 		// Live first, then upcoming, then final — each ordered by start time.
 		sort.SliceStable(games, func(i, j int) bool {
 			if ri, rj := statusRank(games[i]), statusRank(games[j]); ri != rj {
@@ -297,6 +300,27 @@ func (m ScoresModel) Update(msg tea.Msg) (ScoresModel, tea.Cmd) {
 	return m, nil
 }
 
+// leagueTag returns the styled league abbreviation for a game ("LIDOM") when
+// the sport has sub-leagues and none is selected; otherwise "".
+func (m ScoresModel) leagueTag(g mlb.Game) string {
+	if !m.sport.HasSubleagues() || !m.league.IsAll() {
+		return ""
+	}
+	abbr := mlb.GameLeagueAbbr(mlb.StaticLeagues(m.sport.ID), g)
+	if abbr == "" {
+		return ""
+	}
+	return StyleAccent.Render(abbr)
+}
+
+// panelTitle is the left-panel header: "SCORES" or "SCORES · LIDOM".
+func (m ScoresModel) panelTitle() string {
+	if m.league.IsAll() || m.league.Abbreviation == "" {
+		return "SCORES"
+	}
+	return "SCORES · " + m.league.Abbreviation
+}
+
 // ── left panel: game list ─────────────────────────────────────────────────────
 
 func (m ScoresModel) renderGameList() string {
@@ -381,6 +405,12 @@ func (m ScoresModel) renderGameList() string {
 		default:
 			line1 = teamText(away.Team.ID, truncate(away.Team.Name, 18)) + "  vs  " + teamText(home.Team.ID, truncate(home.Team.Name, 18))
 			line2 = StyleDim.Render(formatGameTime(g.GameDate))
+		}
+
+		// Multi-league sports with no league filter: tag each game with its
+		// league so a LIDOM game reads differently from an LVBP one.
+		if tag := m.leagueTag(g); tag != "" {
+			line2 = tag + "  " + line2
 		}
 
 		if m.notifySubs[g.GamePk] {
@@ -581,7 +611,7 @@ func (m ScoresModel) View() string {
 	}
 
 	// Left panel — framed in a gold border box like Golazo's match list
-	leftHeader := PanelHeader("SCORES  "+m.date.Format("Mon Jan 2"), leftWidth)
+	leftHeader := PanelHeader(m.panelTitle()+"  "+m.date.Format("Mon Jan 2"), leftWidth)
 	innerLeft := leftWidth - 4
 	leftPanel := StylePanel.Width(innerLeft).Render(leftHeader + "\n" + m.renderGameList())
 
