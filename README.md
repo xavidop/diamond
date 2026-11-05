@@ -189,13 +189,34 @@ specific view.
 | `diamond mcp` | Run an MCP server exposing the MLB tools | `--name`, `--server-version` |
 | `diamond --version` | Print version, commit, and build date | — |
 
+Every command also accepts `--sport` and `--league` to open a different level or
+competition, e.g. `diamond scores --sport win --league lidom`.
+
+### Sports and leagues
+
+Diamond covers more than MLB: Triple-A, Double-A, High-A, Single-A, Rookie,
+Winter Leagues, KBO, NPB and College. Some sports are really several
+competitions at once — the **Winter Leagues** are LIDOM, LVBP, LMP, LBPRC, AFL,
+ABL and the Caribbean Series — so those can be narrowed to one league:
+
+- In the TUI press **`L`** to open the picker. Sports marked `›` have sub-leagues:
+  `Enter` lists them (`ALL` plus each league), `Enter` again selects, `←` goes back,
+  `Esc` cancels. The sidebar shows the current pick, e.g. `[WIN·LIDOM ▾]`.
+- From the shell: `--sport win` (all winter leagues, every game tagged with its
+  league) or `--sport win --league lidom`. Leagues match by abbreviation
+  (`lidom`, `lvbp`, `lmp`, `lbprc`, `afl`, `abl`, `cs`), short name or id.
+
+Scores, standings and leaders follow the pick; with `ALL`, standings render one
+table per league and each game row carries its league tag.
+
 ### Interactive TUI
 
 Run `diamond` with no arguments to launch the menu. The sidebar (with a live-game
 count that refreshes every 30s) gives you: Home, Scores, Standings, Leaders,
 Streaks, Compare, Team Compare, Teams, Players, Postseason, Awards, Transactions,
 History, Draft, Venues, Favorites, Glossary, and **DiamondGPT ✨**. Navigate with
-the arrow keys, `Enter` to drill in, and `r` to refresh.
+the arrow keys, `Enter` to drill in, `r` to refresh, `L` to switch sport or
+league, and `?` for the full key reference.
 
 ### Favorites
 

@@ -221,6 +221,21 @@ func NewApp(startView ViewID, gamePk int, sport mlb.Sport, query ...string) App 
 	return a
 }
 
+// WithLeague applies a sub-league filter (League.ID 0 = all) to the app and the
+// views that honour it (scores, standings, leaders) and re-seeds the picker so
+// it reopens on the current choice. Ignored for single-competition sports.
+func (a App) WithLeague(l mlb.League) App {
+	if !a.sport.HasSubleagues() {
+		l = mlb.League{}
+	}
+	a.league = l
+	a.scores.league = l
+	a.standings.league = l
+	a.leaders.league = l
+	a.leaguePicker = NewLeaguePickerModel(a.sport, l)
+	return a
+}
+
 func (a App) Init() tea.Cmd {
 	cmds := []tea.Cmd{animTick(), a.home.Init(), notifyTick()}
 	if !SuppressUpdateCheck {
@@ -310,19 +325,12 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case SportChangedMsg:
 		a.sport = msg.Sport
-		a.league = msg.League
-		if !a.sport.HasSubleagues() {
-			a.league = mlb.League{}
-		}
 		a.showLeague = false
-		a.leaguePicker = NewLeaguePickerModel(a.sport, a.league)
 		a.scores = NewScoresModel(a.sport)
-		a.scores.league = a.league
 		a.scores.notifySubs = a.notifySubs
 		a.standings = NewStandingsModel(a.sport)
-		a.standings.league = a.league
 		a.leaders = NewLeadersModel(a.sport)
-		a.leaders.league = a.league
+		a = a.WithLeague(msg.League)
 		a.team = NewTeamModel(a.sport)
 		a.player = NewPlayerModel(a.sport)
 		a.streaks = NewStreaksModel(a.sport)
@@ -738,7 +746,8 @@ func (a App) View() string {
 }
 
 func (a App) helpView() string {
-	help := StylePanel.Width(52).Render(
+	current := sportLabel(a.sport, a.league)
+	help := StylePanel.Width(60).Render(
 		StyleTitle.Render("Keyboard Shortcuts") + "\n\n" +
 			StyleHeader.Render("Layout") + "\n" +
 			"  Esc       back / focus the sidebar\n" +
@@ -746,13 +755,21 @@ func (a App) helpView() string {
 			"  ←/→       sidebar ⇄ content (also in views)\n" +
 			"  Ctrl+B    show / hide the sidebar\n\n" +
 			StyleHeader.Render("Global") + "\n" +
-			"  L         league picker (› sub-leagues, e.g. LIDOM)\n" +
+			"  L         switch sport / league\n" +
 			"  ?         toggle this help\n" +
 			"  r         refresh current view\n" +
 			"  q         quit\n\n" +
 			StyleHeader.Render("Navigation") + "\n" +
 			"  j / ↓     move down       k / ↑   move up\n" +
-			"  Tab       next tab        f       favorite\n",
+			"  Tab       next tab        f       favorite\n\n" +
+			StyleHeader.Render("Sport & league picker  ·  now: "+current) + "\n" +
+			"  L         open: pick MLB, Triple-A, Winter Leagues…\n" +
+			"  ›         sport has sub-leagues → Enter lists them\n" +
+			"            (Winter: ALL · LIDOM · LVBP · LMP · LBPRC · AFL · ABL · CS)\n" +
+			"  Enter     select     ← / h   back to sports     Esc  cancel\n" +
+			"  Scores, standings and leaders follow the pick;\n" +
+			"  with ALL each game is tagged with its league.\n" +
+			StyleDim.Render("  Start filtered: diamond --sport win --league lidom") + "\n",
 	)
 	return lipgloss.Place(a.width, a.height, lipgloss.Center, lipgloss.Center, help)
 }

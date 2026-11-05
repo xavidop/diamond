@@ -76,13 +76,15 @@ func (s Sidebar) View(focused bool, sport mlb.Sport, league mlb.League, active V
 	// Brand
 	b.WriteString(StyleAccent.Render("⚾ ") + gradientShimmer("DIAMOND", start, end, phase) + "\n")
 	b.WriteString(StyleDim.Render("["+sportLabel(sport, league)+" ▾]  "+version.Short()) + "\n")
+	// Discoverability: the two keys newcomers need most.
+	b.WriteString(StyleAccent.Render("L") + StyleDim.Render(" league   ") + StyleAccent.Render("?") + StyleDim.Render(" help") + "\n")
 	b.WriteString(StyleDim.Render(strings.Repeat("─", 18)) + "\n")
 
 	activeIdx := navIndexFor(active)
 
 	// Window the list to fit height if needed (cursor-follow). Reserve rows for
-	// the brand header and the live/upcoming footer.
-	avail := s.height - 12
+	// the brand header (incl. the key hint) and the live/upcoming footer.
+	avail := s.height - 13
 	if avail < 4 {
 		avail = 4
 	}
