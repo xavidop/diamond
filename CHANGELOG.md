@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/xavidop/diamond/compare/v1.20.0...v1.21.0) (2026-11-05)
+
+
+### Features
+
+* **mcp:** grow the MCP/DiamondGPT toolset from 18 to 37 tools ([#173](https://github.com/xavidop/diamond/issues/173)) ([3e2fdbc](https://github.com/xavidop/diamond/commit/3e2fdbcfd86082321a2876ea70e9f160eab10522))
+
 # [1.20.0](https://github.com/xavidop/diamond/compare/v1.19.0...v1.20.0) (2026-11-05)
 
 
