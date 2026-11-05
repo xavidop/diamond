@@ -227,11 +227,21 @@ Favorite teams and players are persisted to
 ### MCP server
 
 `diamond mcp` runs a [Model Context Protocol](https://modelcontextprotocol.io)
-stdio server exposing all 18 MLB data tools to any MCP-capable client.
+stdio server exposing 37 MLB data tools to any MCP-capable client (Claude
+Desktop, Cursor, …). They are the same tools the CLI's DiamondGPT uses.
 
 ```bash
 diamond mcp --name diamond-mlb --server-version 1.0.0
 ```
+
+| Area | Tools |
+| --- | --- |
+| Discovery | `mlb_sports`, `mlb_leagues` — sport ids (1 MLB, 17 Winter Leagues…) and the leagues under them (LIDOM, LVBP, …) |
+| Schedule & standings | `mlb_schedule`, `mlb_standings`, `mlb_wildcard_standings`, `mlb_stat_leaders`, `mlb_date_range_stats` — all accept `sportId` / `leagueId` |
+| Games | `mlb_game` (live feed: linescore, boxscore, current play), `mlb_game_content` (highlights + recap), `mlb_win_probability` |
+| Players | `mlb_search_player`, `mlb_player`, `mlb_player_gamelog`, `mlb_player_splits`, `mlb_batter_vs_pitcher`, `mlb_player_expected_stats`, `mlb_player_sabermetrics`, `mlb_player_percentiles` (Savant), `mlb_player_fielding`, `mlb_player_hot_cold_zones`, `mlb_player_projections`, `mlb_player_career_trail`, `mlb_player_recent_plays` |
+| Teams | `mlb_teams`, `mlb_team_roster`, `mlb_team_stats`, `mlb_team_leaders`, `mlb_team_schedule`, `mlb_team_coaches`, `mlb_team_affiliates`, `mlb_transactions` |
+| Season context | `mlb_awards`, `mlb_postseason`, `mlb_draft`, `mlb_venues`, `mlb_venue`, `mlb_news` |
 
 ## Web
 

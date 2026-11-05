@@ -16,8 +16,11 @@ var mcpCmd = &cobra.Command{
 	Use:   "mcp",
 	Short: "Run an MCP server exposing the MLB data tools",
 	Long: `Run a Model Context Protocol (MCP) server over stdio that exposes Diamond's
-MLB Stats API tools — schedule, standings, leaders, players, teams, rosters,
-splits, awards, postseason, draft, venues, transactions and more — to any MCP
+MLB Stats API tools — schedule, standings, leaders, live game detail, highlights,
+players (bio, game logs, splits, Statcast expected stats, sabermetrics, Savant
+percentiles, projections, career trail), teams (rosters, leaders, schedule,
+coaches, affiliates), transactions, awards, postseason, draft, venues, news,
+and every level from MLB to the winter leagues (sportId / leagueId) — to any MCP
 client (Claude Desktop, Cursor, another Genkit app, …).
 
 Built with Genkit Go; the tools are the exact ones DiamondGPT uses.
