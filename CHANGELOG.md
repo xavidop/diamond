@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/xavidop/diamond/compare/v1.19.0...v1.20.0) (2026-11-05)
+
+
+### Features
+
+* **cli:** make the sport/league switch discoverable (sidebar hint, ? help, --sport/--league flags) ([#172](https://github.com/xavidop/diamond/issues/172)) ([7506479](https://github.com/xavidop/diamond/commit/750647954afbb6a41c11ab38dd77f9d2fe042e13))
+
 # [1.19.0](https://github.com/xavidop/diamond/compare/v1.18.4...v1.19.0) (2026-11-05)
 
 
