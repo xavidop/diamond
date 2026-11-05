@@ -1,3 +1,10 @@
+## [1.18.4](https://github.com/xavidop/diamond/compare/v1.18.3...v1.18.4) (2026-10-22)
+
+
+### Bug Fixes
+
+* write the cask's quarantine removal as postflight_steps ([#159](https://github.com/xavidop/diamond/issues/159)) ([79e4a8a](https://github.com/xavidop/diamond/commit/79e4a8ad50c35f0d01b049509bc50045cf5ca2a2))
+
 ## [1.18.3](https://github.com/xavidop/diamond/compare/v1.18.2...v1.18.3) (2026-10-05)
 
 
